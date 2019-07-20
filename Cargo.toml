@@ -1,0 +1,9 @@
+[package]
+name = "e"
+version = "0.1.0"
+authors = ["Vincent Ollivier <v@vinc.cc>"]
+edition = "2018"
+
+[dependencies]
+colored = "1.6.0"
+regex = "1"
