@@ -31,7 +31,7 @@ EXAMPLE
     > p
     Ed is the standard text editor.
     > %s/standard/venerable/
-    > %g/venerable/p
+    > %g/ve.*ble/p
     Ed is the venerable text editor.
     > 1i
     Ned is the new standard text editor.
