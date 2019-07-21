@@ -46,17 +46,17 @@ fn main() {
     let mut lines = Vec::new();
     let mut addr = 0;
     let mut filename = None;
-    let mut prompt = "";
+    let mut prompt = "> ";
 
-    let mut show_error = false;
+    let mut show_error = true;
     let mut show_debug = false;
     let args: Vec<String> = env::args().filter(|arg| {
         if arg == "--debug" {
             show_debug = true;
         }
-        if arg == "--verbose" {
-            show_error = true;
-            prompt = "> ";
+        if arg == "--silent" {
+            show_error = false;
+            prompt = "";
         }
         !arg.starts_with("--")
     }).collect();
