@@ -11,7 +11,7 @@ ned - line-oriented text editor
 SYNOPSIS
 --------
 
-ned [options] [files]
+`ned [option] [file]`
 
 
 DESCRIPTION

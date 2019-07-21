@@ -157,7 +157,13 @@ fn main() {
                             addr -= 1;
                         }
                     },
-                    "d" => { // Delete range of lines
+                    "c" => { // Change lines
+                        let range = begin - 1 .. end;
+                        lines.drain(range);
+                        addr = begin - 1;
+                        insert_mode = true;
+                    },
+                    "d" => { // Delete lines
                         let range = begin - 1 .. end;
                         lines.drain(range);
                     },
