@@ -9,13 +9,18 @@ use rustyline::error::ReadlineError;
 use std::env;
 use std::fs;
 
+static INVALID_COMMAND_ERROR: &str = "Invalid command";
+static INVALID_RANGE_ERROR: &str = "Invalid range";
+static NO_FILENAME_ERROR: &str = "No file name";
+static DIRTY_ERROR: &str = "No write since last change";
+
 fn read_lines(path: &str) -> Vec<String> {
     let data = fs::read_to_string(path).expect("Unable to read file");
     data.lines().map(|l| l.to_string()).collect()
 }
 
-fn print_error(error: &str, show_verbose: bool) {
-    if show_verbose {
+fn print_error(error: &str, show_error: bool) {
+    if show_error {
         println!("{}", format!("? {}", error).red());
     } else {
         println!("{}", "?".red());
@@ -36,21 +41,21 @@ fn main() {
     let home = std::env::var("HOME").unwrap();
     let history = format!("{}/.ned_history", home);
 
+    let mut dirty = false;
     let mut insert_mode = false;
     let mut lines = Vec::new();
     let mut addr = 0;
-    let mut file = None;
+    let mut filename = None;
     let mut prompt = "";
-    let mut dirty = false;
 
+    let mut show_error = false;
     let mut show_debug = false;
-    let mut show_verbose = false;
     let args: Vec<String> = env::args().filter(|arg| {
         if arg == "--debug" {
             show_debug = true;
         }
         if arg == "--verbose" {
-            show_verbose = true;
+            show_error = true;
             prompt = "> ";
         }
         !arg.starts_with("--")
@@ -60,7 +65,7 @@ fn main() {
         let f = args[1].clone();
         lines = read_lines(&f);
         addr = lines.len();
-        file = Some(String::from(f));
+        filename = Some(String::from(f));
     }
 
     let re = Regex::new(concat!(
@@ -105,12 +110,8 @@ fn main() {
                 }
 
                 let caps = re.captures(input).unwrap();
-                if show_debug {
-                    println!("# regex: {:?}", caps);
-                }
 
                 let cmd = &caps["cmd"];
-
                 let cmd_sep = if &caps["cmd_sep"] == "/" { "/" } else { " " };
                 let params: Vec<&str> = caps["params"].split(cmd_sep).collect();
 
@@ -142,7 +143,7 @@ fn main() {
 
                 if first_addr > last_addr || last_addr > lines.len() {
                     if first_addr != 0 || cmd != "a" || !cmd.to_lowercase().ends_with("q") {
-                        print_error("Invalid range", show_verbose);
+                        print_error(INVALID_RANGE_ERROR, show_error);
                         continue;
                     }
                 }
@@ -181,19 +182,28 @@ fn main() {
                         let f = params[0];
                         lines = read_lines(&f);
                         addr = lines.len();
-                        file = Some(String::from(f));
+                        filename = Some(String::from(f));
                         dirty = false;
+                    },
+                    "f" => { // Set or print filename
+                        if params[0] != "" {
+                            filename = Some(String::from(params[0]));
+                        } else if let Some(f) = filename.clone() {
+                            println!("{}", f);
+                        } else {
+                            print_error(NO_FILENAME_ERROR, show_error);
+                        }
                     },
                     "w" | "wq" => { // Write to file (and quit)
                         if params[0] != "" {
-                            file = Some(String::from(params[0]));
+                            filename = Some(String::from(params[0]));
                         }
-                        if let Some(f) = file.clone() {
+                        if let Some(f) = filename.clone() {
                             let data = lines.join("\n");
                             fs::write(f, data).expect("Unable to write file");
                             dirty = false;
                         } else {
-                            print_error("No file name", show_verbose);
+                            print_error(NO_FILENAME_ERROR, show_error);
                             continue;
                         }
                     },
@@ -242,7 +252,7 @@ fn main() {
                     },
                     "q" => {
                         if dirty {
-                            print_error("No write since last change", show_verbose);
+                            print_error(DIRTY_ERROR, show_error);
                             continue;
                         }
                     },
@@ -250,7 +260,7 @@ fn main() {
                         // Nothing to do here
                     },
                     _ => {
-                        print_error("Invalid command", show_verbose);
+                        print_error(INVALID_COMMAND_ERROR, show_error);
                     }
                 }
 
