@@ -132,7 +132,7 @@ fn main() {
 
                 addr = end;
 
-                if begin > end || end > lines.len() {
+                if begin > end || end > lines.len() || (begin == 0 && cmd != "a") {
                     print_error("Invalid range", show_verbose);
                     continue;
                 }
@@ -145,9 +145,6 @@ fn main() {
                 }
 
                 match cmd {
-                    "" => {
-                        print_error("Invalid command", show_verbose);
-                    },
                     "a" => { // Add line after addr
                         insert_mode = true;
                     },
@@ -189,10 +186,6 @@ fn main() {
                         }
                     },
                     "p" |"n" | "pn" => { // Print file (with numbered lines)
-                        if begin == 0 {
-                            print_error("Invalid range", show_verbose);
-                            continue;
-                        }
                         let range = begin .. end + 1;
                         let n = lines.len();
                         let show_number = cmd.ends_with("n");
@@ -202,10 +195,6 @@ fn main() {
                         }
                     },
                     "g" => { // Global command
-                        if begin == 0 {
-                            print_error("Invalid range", show_verbose);
-                            continue;
-                        }
                         let re = Regex::new(params[0]).unwrap();
                         let cmd_list = if params.len() == 2 { params[1] } else { "p" };
                         let show_number = cmd_list.ends_with("n");
@@ -229,10 +218,6 @@ fn main() {
                         }
                     },
                     "s" => { // Substitute command
-                        if begin == 0 {
-                            print_error("Invalid range", show_verbose);
-                            continue;
-                        }
                         let range = begin .. end + 1;
                         let re = Regex::new(params[0]).unwrap();
                         for i in range {
