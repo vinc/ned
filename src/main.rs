@@ -157,17 +157,17 @@ fn main() {
                             addr -= 1;
                         }
                     },
-                    "d" => {
+                    "d" => { // Delete range of lines
                         let range = begin - 1 .. end;
                         lines.drain(range);
                     },
-                    "o" => {
+                    "e" => { // Open file
                         let f = params[0];
                         lines = read_lines(&f);
                         addr = lines.len();
                         file = Some(String::from(f));
                     },
-                    "w" | "wq" => {
+                    "w" | "wq" => { // Write to file (and quit)
                         if params[0] != "" {
                             file = Some(String::from(params[0]));
                         }
@@ -182,7 +182,7 @@ fn main() {
                             continue;
                         }
                     },
-                    "p" |"n" | "pn" => {
+                    "p" |"n" | "pn" => { // Print file (with numbered lines)
                         if begin == 0 {
                             print_error("Invalid range", show_verbose);
                             continue;
@@ -195,23 +195,34 @@ fn main() {
                             addr = i;
                         }
                     },
-                    "g" | "gn" => {
+                    "g" => { // Global command
                         if begin == 0 {
                             print_error("Invalid range", show_verbose);
                             continue;
                         }
-                        let range = begin .. end + 1;
                         let re = Regex::new(params[0]).unwrap();
-                        let n = lines.len();
-                        let show_number = cmd.ends_with("n");
-                        for i in range {
+                        let cmd_list = if params.len() == 2 { params[1] } else { "p" };
+                        let show_number = cmd_list.ends_with("n");
+                        let mut i = begin;
+                        let mut n = end;
+                        while i < n {
                             if re.is_match(&lines[i - 1]) {
-                                print_line(&lines[i - 1], i, n, show_number);
+                                match cmd_list {
+                                    "p" | "pn" => {
+                                        print_line(&lines[i - 1], i, lines.len(), show_number);
+                                    },
+                                    "d" => {
+                                        lines.remove(i - 1);
+                                        n -= 1;
+                                    },
+                                    _ => {}
+                                }
                                 addr = i;
                             }
+                            i += 1;
                         }
                     },
-                    "s" => {
+                    "s" => { // Substitute command
                         if begin == 0 {
                             print_error("Invalid range", show_verbose);
                             continue;
