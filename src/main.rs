@@ -81,18 +81,21 @@ fn main() {
                 break
             },
             Ok(input) => {
-                rl.add_history_entry(input.as_str());
+                let input = input.trim();
 
                 if insert_mode {
                     if input == "." {
                         insert_mode = false;
                     } else {
-                        lines.insert(addr, input);
+                        lines.insert(addr, input.to_string());
                         addr += 1;
                     }
                     continue;
+                } else {
+                    rl.add_history_entry(input);
                 }
-                let caps = re.captures(&input).unwrap();
+
+                let caps = re.captures(input).unwrap();
                 if show_debug {
                     println!("# regex: {:?}", caps);
                 }
