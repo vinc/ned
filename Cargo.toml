@@ -5,6 +5,8 @@ version = "0.1.0"
 authors = ["Vincent Ollivier <v@vinc.cc>"]
 edition = "2018"
 license = "MIT"
+repository = "https://github.com/vinc/ned"
+readme = "README.md"
 
 [dependencies]
 colored = "1.6.0"
