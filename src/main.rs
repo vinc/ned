@@ -9,7 +9,7 @@ use rustyline::error::ReadlineError;
 use std::env;
 use std::fs;
 
-fn read(path: &str) -> Vec<String> {
+fn read_lines(path: &str) -> Vec<String> {
     let data = fs::read_to_string(path).expect("Unable to read file");
     data.lines().map(|l| l.to_string()).collect()
 }
@@ -37,9 +37,9 @@ fn main() {
     let history = format!("{}/.ned_history", home);
 
     let mut insert_mode = false;
-    let mut file = None;
+    let mut lines = Vec::new();
     let mut addr = 0;
-    let mut text = Vec::new();
+    let mut file = None;
     let mut prompt = "";
 
     let mut show_debug = false;
@@ -56,9 +56,10 @@ fn main() {
     }).collect();
 
     if args.len() > 1 {
-        file = Some(args[1].clone());
-        text = read(&args[1]);
-        addr = text.len();
+        let f = args[1].clone();
+        lines = read_lines(&f);
+        addr = lines.len();
+        file = Some(String::from(f));
     }
 
     let re = Regex::new(r"(?P<addr1>\d*)(?P<range_sep>[,;%]?)(?P<addr2>\d*)(?P<cmd>[a-z]*)(?P<cmd_sep>[ /]?)(?P<params>.*)").unwrap();
@@ -86,7 +87,7 @@ fn main() {
                     if input == "." {
                         insert_mode = false;
                     } else {
-                        text.insert(addr, input);
+                        lines.insert(addr, input);
                         addr += 1;
                     }
                     continue;
@@ -113,25 +114,25 @@ fn main() {
                 begin = match &caps["addr1"] {
                     ""  => begin,
                     "." => addr,
-                    "$" => text.len(),
+                    "$" => lines.len(),
                     _   => caps["addr1"].parse::<usize>().unwrap()
                 };
 
                 let mut end = match &caps["range_sep"] {
-                    "," | "%" => text.len(),
+                    "," | "%" => lines.len(),
                     _         => begin
                 };
 
                 end = match &caps["addr2"] {
                     ""  => end,
                     "." => addr,
-                    "$" => text.len(),
+                    "$" => lines.len(),
                     _   => caps["addr2"].parse::<usize>().unwrap()
                 };
 
                 addr = end;
 
-                if begin > end || end > text.len() {
+                if begin > end || end > lines.len() {
                     print_error("Invalid range", show_verbose);
                     continue;
                 }
@@ -158,26 +159,27 @@ fn main() {
                         }
                     },
                     "d" => {
-                        text.remove(addr - 1);
+                        lines.remove(addr - 1);
                     },
                     "o" => {
                         let f = params[0];
+                        lines = read_lines(&f);
+                        addr = lines.len();
                         file = Some(String::from(f));
-                        text = read(params[0]);
                     },
                     "w" | "wq" => {
-                        let path = if params.len() == 1 {
-                            String::from(params[0])
-                        } else if let Some(f) = file.clone() {
-                            f
+                        if params[0] != "" {
+                            file = Some(String::from(params[0]));
+                        }
+                        if let Some(f) = file.clone() {
+                            let data = lines.join("\n");
+                            fs::write(f, data).expect("Unable to write file");
+                            if cmd == "wq" {
+                                break;
+                            }
                         } else {
                             print_error("No file name", show_verbose);
                             continue;
-                        };
-                        let data = text.join("\n");
-                        fs::write(path, data).expect("Unable to write file");
-                        if cmd == "wq" {
-                            break;
                         }
                     },
                     "p" |"n" | "pn" => {
@@ -185,10 +187,10 @@ fn main() {
                             print_error("Invalid range", show_verbose);
                             continue;
                         }
-                        let n = text.len();
+                        let n = lines.len();
                         let show_number = cmd.ends_with("n");
                         for i in range {
-                            print_line(&text[i - 1], i, n, show_number);
+                            print_line(&lines[i - 1], i, n, show_number);
                             addr = i;
                         }
                     },
@@ -198,11 +200,11 @@ fn main() {
                             continue;
                         }
                         let re = Regex::new(params[0]).unwrap();
-                        let n = text.len();
+                        let n = lines.len();
                         let show_number = cmd.ends_with("n");
                         for i in range {
-                            if re.is_match(&text[i - 1]) {
-                                print_line(&text[i - 1], i, n, show_number);
+                            if re.is_match(&lines[i - 1]) {
+                                print_line(&lines[i - 1], i, n, show_number);
                                 addr = i;
                             }
                         }
@@ -214,8 +216,8 @@ fn main() {
                         }
                         let re = Regex::new(params[0]).unwrap();
                         for i in range {
-                            if re.is_match(&text[i - 1]) {
-                                text[i - 1] = re.replace_all(&text[i - 1], params[1]).to_string();
+                            if re.is_match(&lines[i - 1]) {
+                                lines[i - 1] = re.replace_all(&lines[i - 1], params[1]).to_string();
                                 addr = i;
                             }
                         }
