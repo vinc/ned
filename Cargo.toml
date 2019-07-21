@@ -1,8 +1,10 @@
 [package]
 name = "ned"
+description = "Ned is the new standard text editor."
 version = "0.1.0"
 authors = ["Vincent Ollivier <v@vinc.cc>"]
 edition = "2018"
+license = "MIT"
 
 [dependencies]
 colored = "1.6.0"
