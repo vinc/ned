@@ -41,6 +41,7 @@ fn main() {
     let mut addr = 0;
     let mut file = None;
     let mut prompt = "";
+    let mut dirty = false;
 
     let mut show_debug = false;
     let mut show_verbose = false;
@@ -62,7 +63,14 @@ fn main() {
         file = Some(String::from(f));
     }
 
-    let re = Regex::new(r"(?P<addr1>\d*)(?P<range_sep>[,;%]?)(?P<addr2>\d*)(?P<cmd>[a-z]*)(?P<cmd_sep>[ /]?)(?P<params>.*)").unwrap();
+    let re = Regex::new(concat!(
+        "(?P<first_addr>[0-9]*)",
+        "(?P<range_sep>[,;%]?)",
+        "(?P<last_addr>[0-9]*)",
+        "(?P<cmd>[a-zA-Z]*)",
+        "(?P<cmd_sep>[ /]?)",
+        "(?P<params>.*)"
+    )).unwrap();
 
     let mut rl = Editor::<()>::new();
     rl.load_history(&history).ok();
@@ -89,6 +97,7 @@ fn main() {
                     } else {
                         lines.insert(addr, input.to_string());
                         addr += 1;
+                        dirty = true;
                     }
                     continue;
                 } else {
@@ -102,46 +111,44 @@ fn main() {
 
                 let cmd = &caps["cmd"];
 
-                if cmd == "q" {
-                    break;
-                }
-
                 let cmd_sep = if &caps["cmd_sep"] == "/" { "/" } else { " " };
                 let params: Vec<&str> = caps["params"].split(cmd_sep).collect();
 
-                let mut begin = match &caps["range_sep"] {
+                let mut first_addr = match &caps["range_sep"] {
                     "," | "%" => 1,
                     _         => addr
                 };
 
-                begin = match &caps["addr1"] {
-                    ""  => begin,
+                first_addr = match &caps["first_addr"] {
+                    ""  => first_addr,
                     "." => addr,
                     "$" => lines.len(),
-                    _   => caps["addr1"].parse::<usize>().unwrap()
+                    _   => caps["first_addr"].parse::<usize>().unwrap()
                 };
 
-                let mut end = match &caps["range_sep"] {
+                let mut last_addr = match &caps["range_sep"] {
                     "," | "%" => lines.len(),
-                    _         => begin
+                    _         => first_addr
                 };
 
-                end = match &caps["addr2"] {
-                    ""  => end,
+                last_addr = match &caps["last_addr"] {
+                    ""  => last_addr,
                     "." => addr,
                     "$" => lines.len(),
-                    _   => caps["addr2"].parse::<usize>().unwrap()
+                    _   => caps["last_addr"].parse::<usize>().unwrap()
                 };
 
-                addr = end;
+                addr = last_addr;
 
-                if begin > end || end > lines.len() || (begin == 0 && cmd != "a") {
-                    print_error("Invalid range", show_verbose);
-                    continue;
+                if first_addr > last_addr || last_addr > lines.len() {
+                    if first_addr != 0 || cmd != "a" || !cmd.to_lowercase().ends_with("q") {
+                        print_error("Invalid range", show_verbose);
+                        continue;
+                    }
                 }
 
                 if show_debug {
-                    println!("# range: [{},{}]", begin, end);
+                    println!("# range: [{},{}]", first_addr, last_addr);
                     println!("# addr: {}", addr);
                     println!("# cmd: {}", cmd);
                     println!("# params: {:?}", params);
@@ -158,20 +165,24 @@ fn main() {
                         }
                     },
                     "c" => { // Change lines
-                        let range = begin - 1 .. end;
+                        let range = first_addr - 1 .. last_addr;
                         lines.drain(range);
-                        addr = begin - 1;
+                        addr = first_addr - 1;
+                        dirty = true;
                         insert_mode = true;
                     },
                     "d" => { // Delete lines
-                        let range = begin - 1 .. end;
+                        let range = first_addr - 1 .. last_addr;
                         lines.drain(range);
+                        dirty = true;
+                        addr = first_addr - 1;
                     },
                     "e" => { // Open file
                         let f = params[0];
                         lines = read_lines(&f);
                         addr = lines.len();
                         file = Some(String::from(f));
+                        dirty = false;
                     },
                     "w" | "wq" => { // Write to file (and quit)
                         if params[0] != "" {
@@ -180,16 +191,14 @@ fn main() {
                         if let Some(f) = file.clone() {
                             let data = lines.join("\n");
                             fs::write(f, data).expect("Unable to write file");
-                            if cmd == "wq" {
-                                break;
-                            }
+                            dirty = false;
                         } else {
                             print_error("No file name", show_verbose);
                             continue;
                         }
                     },
                     "p" |"n" | "pn" => { // Print file (with numbered lines)
-                        let range = begin .. end + 1;
+                        let range = first_addr .. last_addr + 1;
                         let n = lines.len();
                         let show_number = cmd.ends_with("n");
                         for i in range {
@@ -201,8 +210,8 @@ fn main() {
                         let re = Regex::new(params[0]).unwrap();
                         let cmd_list = if params.len() == 2 { params[1] } else { "p" };
                         let show_number = cmd_list.ends_with("n");
-                        let mut i = begin;
-                        let mut n = end;
+                        let mut i = first_addr;
+                        let mut n = last_addr;
                         while i <= n {
                             if re.is_match(&lines[i - 1]) {
                                 match cmd_list {
@@ -222,7 +231,7 @@ fn main() {
                         }
                     },
                     "s" => { // Substitute command
-                        let range = begin .. end + 1;
+                        let range = first_addr .. last_addr + 1;
                         let re = Regex::new(params[0]).unwrap();
                         for i in range {
                             if re.is_match(&lines[i - 1]) {
@@ -231,9 +240,22 @@ fn main() {
                             }
                         }
                     },
+                    "q" => {
+                        if dirty {
+                            print_error("No write since last change", show_verbose);
+                            continue;
+                        }
+                    },
+                    "Q" => {
+                        // Nothing to do here
+                    },
                     _ => {
                         print_error("Invalid command", show_verbose);
                     }
+                }
+
+                if cmd.to_lowercase().ends_with("q") {
+                    break;
                 }
             }
         }
