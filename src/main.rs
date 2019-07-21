@@ -137,7 +137,6 @@ fn main() {
                     continue;
                 }
 
-                let range = begin .. end + 1;
                 if show_debug {
                     println!("# range: [{},{}]", begin, end);
                     println!("# addr: {}", addr);
@@ -159,7 +158,8 @@ fn main() {
                         }
                     },
                     "d" => {
-                        lines.remove(addr - 1);
+                        let range = begin - 1 .. end;
+                        lines.drain(range);
                     },
                     "o" => {
                         let f = params[0];
@@ -183,10 +183,11 @@ fn main() {
                         }
                     },
                     "p" |"n" | "pn" => {
-                        if range.start == 0 {
+                        if begin == 0 {
                             print_error("Invalid range", show_verbose);
                             continue;
                         }
+                        let range = begin .. end + 1;
                         let n = lines.len();
                         let show_number = cmd.ends_with("n");
                         for i in range {
@@ -195,10 +196,11 @@ fn main() {
                         }
                     },
                     "g" | "gn" => {
-                        if range.start == 0 {
+                        if begin == 0 {
                             print_error("Invalid range", show_verbose);
                             continue;
                         }
+                        let range = begin .. end + 1;
                         let re = Regex::new(params[0]).unwrap();
                         let n = lines.len();
                         let show_number = cmd.ends_with("n");
@@ -210,10 +212,11 @@ fn main() {
                         }
                     },
                     "s" => {
-                        if range.start == 0 {
+                        if begin == 0 {
                             print_error("Invalid range", show_verbose);
                             continue;
                         }
+                        let range = begin .. end + 1;
                         let re = Regex::new(params[0]).unwrap();
                         for i in range {
                             if re.is_match(&lines[i - 1]) {
