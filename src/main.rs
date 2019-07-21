@@ -247,6 +247,7 @@ fn main() {
                             if re.is_match(&lines[i - 1]) {
                                 lines[i - 1] = re.replace_all(&lines[i - 1], params[1]).to_string();
                                 addr = i;
+                                dirty = true;
                             }
                         }
                     },
