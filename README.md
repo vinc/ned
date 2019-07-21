@@ -11,13 +11,35 @@ ned - line-oriented text editor
 SYNOPSIS
 --------
 
-`ned [option] [file]`
+`ned [options] [file]`
 
 
 DESCRIPTION
 -----------
 
 Ned is the new standard text editor.
+
+
+EXAMPLE
+-------
+
+    $ ned
+    > a
+    Ed is the standard text editor.
+    .
+    > w example.txt
+    > p
+    Ed is the standard text editor.
+    > %s/standard/venerable/
+    > %g/venerable/p
+    Ed is the venerable text editor.
+    > 1i
+    Ned is the new standard text editor.
+    .
+    > 2d
+    > ,p
+    Ned is the new standard text editor.
+    > wq
 
 
 SEE ALSO
