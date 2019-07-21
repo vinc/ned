@@ -200,7 +200,7 @@ fn main() {
                         let show_number = cmd_list.ends_with("n");
                         let mut i = begin;
                         let mut n = end;
-                        while i < n {
+                        while i <= n {
                             if re.is_match(&lines[i - 1]) {
                                 match cmd_list {
                                     "p" | "pn" => {
@@ -208,6 +208,7 @@ fn main() {
                                     },
                                     "d" => {
                                         lines.remove(i - 1);
+                                        i -= 1;
                                         n -= 1;
                                     },
                                     _ => {}
