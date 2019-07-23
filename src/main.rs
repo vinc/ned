@@ -19,8 +19,8 @@ fn read_lines(path: &str) -> Vec<String> {
     data.lines().map(|l| l.to_string()).collect()
 }
 
-fn print_error(error: &str, show_error: bool) {
-    if show_error {
+fn print_error(error: &str, show_help: bool) {
+    if show_help {
         println!("{}", format!("? {}", error).red());
     } else {
         println!("{}", "?".red());
@@ -41,21 +41,22 @@ fn main() {
     let home = std::env::var("HOME").unwrap();
     let history = format!("{}/.ned_history", home);
 
+    // State
     let mut dirty = false;
     let mut insert_mode = false;
+    let mut filename = None;
     let mut lines = Vec::new();
     let mut addr = 0;
-    let mut filename = None;
-    let mut prompt = "> ";
 
-    let mut show_error = true;
+    let mut prompt = "> ";
+    let mut show_help = true;
     let mut show_debug = false;
     let args: Vec<String> = env::args().filter(|arg| {
         if arg == "--debug" {
             show_debug = true;
         }
         if arg == "--silent" {
-            show_error = false;
+            show_help = false;
             prompt = "";
         }
         !arg.starts_with("--")
@@ -69,9 +70,9 @@ fn main() {
     }
 
     let re = Regex::new(concat!(
-        "(?P<first_addr>[0-9]*)",
-        "(?P<range_sep>[,;%]?)",
-        "(?P<last_addr>[0-9]*)",
+        "(?P<addr_1>[0-9]*)",
+        "(?P<addr_sep>[,;%]?)",
+        "(?P<addr_2>[0-9]*)",
         "(?P<cmd>[a-zA-Z]*)",
         "(?P<cmd_sep>[ /]?)",
         "(?P<params>.*)"
@@ -115,86 +116,86 @@ fn main() {
                 let cmd_sep = if &caps["cmd_sep"] == "/" { "/" } else { " " };
                 let params: Vec<&str> = caps["params"].split(cmd_sep).collect();
 
-                let mut first_addr = match &caps["range_sep"] {
+                let mut addr_1 = match &caps["addr_sep"] {
                     "," | "%" => 1,
                     _         => addr
                 };
 
-                first_addr = match &caps["first_addr"] {
-                    ""  => first_addr,
+                addr_1 = match &caps["addr_1"] {
+                    ""  => addr_1,
                     "." => addr,
                     "$" => lines.len(),
-                    _   => caps["first_addr"].parse::<usize>().unwrap()
+                    _   => caps["addr_1"].parse::<usize>().unwrap()
                 };
 
-                let mut last_addr = match &caps["range_sep"] {
+                let mut addr_2 = match &caps["addr_sep"] {
                     "," | "%" => lines.len(),
-                    _         => first_addr
+                    _         => addr_1
                 };
 
-                last_addr = match &caps["last_addr"] {
-                    ""  => last_addr,
+                addr_2 = match &caps["addr_2"] {
+                    ""  => addr_2,
                     "." => addr,
                     "$" => lines.len(),
-                    _   => caps["last_addr"].parse::<usize>().unwrap()
+                    _   => caps["addr_2"].parse::<usize>().unwrap()
                 };
 
-                addr = last_addr;
+                addr = addr_2;
 
-                if first_addr > last_addr || last_addr > lines.len() {
-                    if first_addr != 0 || cmd != "a" || !cmd.to_lowercase().ends_with("q") {
-                        print_error(INVALID_RANGE_ERROR, show_error);
+                if addr_1 > addr_2 || addr_2 > lines.len() {
+                    if addr_1 != 0 || cmd != "a" || !cmd.to_lowercase().ends_with("q") {
+                        print_error(INVALID_RANGE_ERROR, show_help);
                         continue;
                     }
                 }
 
                 if show_debug {
-                    println!("# range: [{},{}]", first_addr, last_addr);
+                    println!("# range: [{},{}]", addr_1, addr_2);
                     println!("# addr: {}", addr);
                     println!("# cmd: {}", cmd);
                     println!("# params: {:?}", params);
                 }
 
                 match cmd {
-                    "a" => { // Add line after addr
+                    "a" => { // Append command
                         insert_mode = true;
                     },
-                    "i" => { // Insert line before addr
+                    "i" => { // Insert command
                         insert_mode = true;
                         if addr > 0 {
                             addr -= 1;
                         }
                     },
-                    "c" => { // Change lines
-                        let range = first_addr - 1 .. last_addr;
+                    "c" => { // Change command
+                        let range = addr_1 - 1 .. addr_2;
                         lines.drain(range);
-                        addr = first_addr - 1;
+                        addr = addr_1 - 1;
                         dirty = true;
                         insert_mode = true;
                     },
-                    "d" => { // Delete lines
-                        let range = first_addr - 1 .. last_addr;
+                    "d" => { // Delete command
+                        let range = addr_1 - 1 .. addr_2;
                         lines.drain(range);
                         dirty = true;
-                        addr = first_addr - 1;
+                        addr = addr_1 - 1;
                     },
-                    "e" => { // Open file
+                    "e" => { // Edit command
                         let f = params[0];
                         lines = read_lines(&f);
                         addr = lines.len();
                         filename = Some(String::from(f));
                         dirty = false;
                     },
-                    "f" => { // Set or print filename
+                    "f" => { // Filename command
                         if params[0] != "" {
                             filename = Some(String::from(params[0]));
                         } else if let Some(f) = filename.clone() {
                             println!("{}", f);
                         } else {
-                            print_error(NO_FILENAME_ERROR, show_error);
+                            print_error(NO_FILENAME_ERROR, show_help);
                         }
                     },
-                    "w" | "wq" => { // Write to file (and quit)
+                    "w" | "wq" => { // Write command
                         if params[0] != "" {
                             filename = Some(String::from(params[0]));
                         }
@@ -203,12 +204,12 @@ fn main() {
                             fs::write(f, data).expect("Unable to write file");
                             dirty = false;
                         } else {
-                            print_error(NO_FILENAME_ERROR, show_error);
+                            print_error(NO_FILENAME_ERROR, show_help);
                             continue;
                         }
                     },
-                    "p" |"n" | "pn" => { // Print file (with numbered lines)
-                        let range = first_addr .. last_addr + 1;
+                    "p" |"n" | "pn" => { // Print and number commands
+                        let range = addr_1 .. addr_2 + 1;
                         let n = lines.len();
                         let show_number = cmd.ends_with("n");
                         for i in range {
@@ -220,8 +221,8 @@ fn main() {
                         let re = Regex::new(params[0]).unwrap();
                         let cmd_list = if params.len() == 2 { params[1] } else { "p" };
                         let show_number = cmd_list.ends_with("n");
-                        let mut i = first_addr;
-                        let mut n = last_addr;
+                        let mut i = addr_1;
+                        let mut n = addr_2;
                         while i <= n {
                             if re.is_match(&lines[i - 1]) {
                                 match cmd_list {
@@ -241,7 +242,7 @@ fn main() {
                         }
                     },
                     "s" => { // Substitute command
-                        let range = first_addr .. last_addr + 1;
+                        let range = addr_1 .. addr_2 + 1;
                         let re = Regex::new(params[0]).unwrap();
                         for i in range {
                             if re.is_match(&lines[i - 1]) {
@@ -251,17 +252,17 @@ fn main() {
                             }
                         }
                     },
-                    "q" => {
+                    "q" => { // Quit command
                         if dirty {
-                            print_error(DIRTY_ERROR, show_error);
+                            print_error(DIRTY_ERROR, show_help);
                             continue;
                         }
                     },
-                    "Q" => {
+                    "Q" => { // Quit without checking command
                         // Nothing to do here
                     },
                     _ => {
-                        print_error(INVALID_COMMAND_ERROR, show_error);
+                        print_error(INVALID_COMMAND_ERROR, show_help);
                     }
                 }
 
