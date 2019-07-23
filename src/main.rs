@@ -1,8 +1,10 @@
 mod editor;
+mod addresses;
 mod commands;
 mod utils;
 
 use crate::editor::*;
+use crate::addresses::*;
 use crate::commands::*;
 use crate::utils::*;
 
