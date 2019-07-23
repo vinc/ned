@@ -1,8 +1,10 @@
 mod editor;
+mod commands;
 mod utils;
 
-use crate::utils::*;
 use crate::editor::*;
+use crate::commands::*;
+use crate::utils::*;
 
 use regex::Regex;
 use rustyline::error::ReadlineError;
