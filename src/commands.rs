@@ -156,3 +156,36 @@ impl Commands for Editor {
         Err(Error::InvalidCommand)
     }
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::addresses::*;
+
+    static TEST_FILE: &str = "LICENSE";
+    static TEST_FILE_LENGTH: usize = 21;
+
+    // The a command shall read the given text and append it after the addressed line; the current
+    // line number shall become the address of the last inserted line or, if there were none, the
+    // addressed line. Address 0 shall be valid for this command; it shall cause the appended text
+    // to be placed at the beginning of the buffer.
+    #[test]
+    fn test_append_command() {
+        let mut ed = Editor::new();
+        ed.edit_command(vec![TEST_FILE]).ok();
+
+        assert_eq!(ed.is_range_ok(0, 0, "a"), true);
+        assert_eq!(ed.is_range_ok(1, 1, "a"), true);
+        assert_eq!(ed.is_range_ok(TEST_FILE_LENGTH, TEST_FILE_LENGTH, "a"), true);
+        assert_eq!(ed.is_range_ok(TEST_FILE_LENGTH + 1, TEST_FILE_LENGTH + 1,"a"), false);
+
+        assert_eq!(ed.append_command(0), Ok(State::Running));
+        assert_eq!(ed.addr, 0);
+        assert_eq!(ed.insert_mode, true);
+
+        assert_eq!(ed.append_command(1), Ok(State::Running));
+        assert_eq!(ed.addr, 1);
+        assert_eq!(ed.insert_mode, true);
+    }
+}

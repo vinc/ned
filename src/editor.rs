@@ -1,8 +1,10 @@
+#[derive(Debug, PartialEq)]
 pub enum State {
     Running,
     Stopped
 }
 
+#[derive(Debug, PartialEq)]
 pub enum Error {
     InvalidCommand,
     InvalidAddress,
