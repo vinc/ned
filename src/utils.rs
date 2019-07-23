@@ -1,3 +1,4 @@
+use crate::editor::Error;
 use colored::Colorize;
 use std::fs;
 
@@ -6,9 +7,16 @@ pub fn read_lines(path: &str) -> Vec<String> {
     data.lines().map(|l| l.to_string()).collect()
 }
 
-pub fn print_error(error: &str, show_help: bool) {
+pub fn print_error(error: Error, show_help: bool) {
+    let msg = match error {
+        Error::InvalidCommand => "Invalid command",
+        Error::InvalidAddress => "Invalid address",
+        Error::NoFilename => "No file name",
+        Error::Dirty => "No write since last change"
+    };
+
     if show_help {
-        println!("{}", format!("? {}", error).red());
+        println!("{}", format!("? {}", msg).red());
     } else {
         println!("{}", "?".red());
     }

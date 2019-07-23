@@ -2,10 +2,17 @@ use crate::utils::*;
 use std::fs;
 use regex::Regex;
 
-static INVALID_COMMAND_ERROR: &str = "Invalid command";
-static INVALID_RANGE_ERROR: &str = "Invalid range";
-static NO_FILENAME_ERROR: &str = "No file name";
-static DIRTY_ERROR: &str = "No write since last change";
+pub enum State {
+    Running,
+    Stopped
+}
+
+pub enum Error {
+    InvalidCommand,
+    InvalidAddress,
+    NoFilename,
+    Dirty
+}
 
 pub struct Editor {
     pub dirty: bool,
@@ -58,65 +65,64 @@ impl Editor {
         (addr_1, addr_2)
     }
 
-    pub fn validate_addresses(&self, addr_1: usize, addr_2: usize, cmd: &str) -> bool {
+    pub fn is_range_ok(&self, addr_1: usize, addr_2: usize, cmd: &str) -> bool {
         if addr_1 > addr_2 || addr_2 > self.lines.len() {
             if addr_1 != 0 || cmd != "a" || !cmd.to_lowercase().ends_with("q") {
-                print_error(INVALID_RANGE_ERROR, self.show_help);
                 return false;
             }
         }
         true
     }
 
-    pub fn append_command(&mut self, addr_1: usize) -> bool {
+    pub fn append_command(&mut self, addr_1: usize) -> Result<State, Error> {
         self.addr = addr_1;
         self.insert_mode = true;
-        false
+        Ok(State::Running)
     }
 
-    pub fn insert_command(&mut self, addr_1: usize) -> bool {
+    pub fn insert_command(&mut self, addr_1: usize) -> Result<State, Error> {
         self.addr = addr_1;
         self.insert_mode = true;
         if self.addr > 0 {
             self.addr -= 1;
         }
-        false
+        Ok(State::Running)
     }
 
-    pub fn change_command(&mut self, addr_1: usize, addr_2: usize) -> bool {
-        self.delete_command(addr_1, addr_2);
+    pub fn change_command(&mut self, addr_1: usize, addr_2: usize) -> Result<State, Error> {
+        self.delete_command(addr_1, addr_2).ok();
         self.insert_mode = true;
-        false
+        Ok(State::Running)
     }
 
-    pub fn delete_command(&mut self, addr_1: usize, addr_2: usize) -> bool {
+    pub fn delete_command(&mut self, addr_1: usize, addr_2: usize) -> Result<State, Error> {
         self.lines.drain(addr_1 - 1 .. addr_2);
         self.addr = addr_1 - 1;
         self.dirty = true;
-        false
+        Ok(State::Running)
     }
 
-    pub fn edit_command(&mut self, params: Vec<&str>) -> bool {
+    pub fn edit_command(&mut self, params: Vec<&str>) -> Result<State, Error> {
         let filename = params[0];
         self.lines = read_lines(filename);
         self.addr = self.lines.len();
         self.filename = Some(filename.to_string());
         self.dirty = false;
-        false
+        Ok(State::Running)
     }
 
-    pub fn filename_command(&mut self, params: Vec<&str>) -> bool {
+    pub fn filename_command(&mut self, params: Vec<&str>) -> Result<State, Error> {
         if params[0] != "" {
             self.filename = Some(params[0].to_string());
         } else if let Some(f) = self.filename.clone() {
             println!("{}", f);
         } else {
-            print_error(NO_FILENAME_ERROR, self.show_help);
+            return Err(Error::NoFilename);
         }
-        false
+        Ok(State::Running)
     }
 
-    pub fn write_command(&mut self, params: Vec<&str>) -> bool {
+    pub fn write_command(&mut self, params: Vec<&str>) -> Result<State, Error> {
         if params[0] != "" {
             self.filename = Some(params[0].to_string());
         }
@@ -125,32 +131,31 @@ impl Editor {
             let data = self.lines.join("\n");
             fs::write(f, data).expect("Unable to write file");
             self.dirty = false;
-            false
+            Ok(State::Running)
         } else {
-            print_error(NO_FILENAME_ERROR, self.show_help);
-            true
+            return Err(Error::NoFilename);
         }
     }
 
-    pub fn print_command(&mut self, addr_1: usize, addr_2: usize) -> bool {
+    pub fn print_command(&mut self, addr_1: usize, addr_2: usize) -> Result<State, Error> {
         let n = self.lines.len();
         for i in addr_1 .. addr_2 + 1 {
             print_line(&self.lines[i - 1], i, n, false);
             self.addr = i;
         }
-        false
+        Ok(State::Running)
     }
 
-    pub fn number_command(&mut self, addr_1: usize, addr_2: usize) -> bool {
+    pub fn number_command(&mut self, addr_1: usize, addr_2: usize) -> Result<State, Error> {
         let n = self.lines.len();
         for i in addr_1 .. addr_2 + 1 {
             print_line(&self.lines[i - 1], i, n, true);
             self.addr = i;
         }
-        false
+        Ok(State::Running)
     }
 
-    pub fn global_command(&mut self, addr_1: usize, addr_2: usize, params: Vec<&str>) -> bool {
+    pub fn global_command(&mut self, addr_1: usize, addr_2: usize, params: Vec<&str>) -> Result<State, Error> {
         let re = Regex::new(params[0]).unwrap();
         let cmd_list = if params.len() == 2 { params[1] } else { "p" };
         let show_number = cmd_list.ends_with("n");
@@ -173,10 +178,10 @@ impl Editor {
             }
             i += 1;
         }
-        false
+        Ok(State::Running)
     }
 
-    pub fn substitute_command(&mut self, addr_1: usize, addr_2: usize, params: Vec<&str>) -> bool {
+    pub fn substitute_command(&mut self, addr_1: usize, addr_2: usize, params: Vec<&str>) -> Result<State, Error> {
         let re = Regex::new(params[0]).unwrap();
         for i in addr_1 .. addr_2 + 1 {
             if re.is_match(&self.lines[i - 1]) {
@@ -185,24 +190,22 @@ impl Editor {
                 self.dirty = true;
             }
         }
-        false
+        Ok(State::Running)
     }
 
-    pub fn quit_command(&self) -> bool {
+    pub fn quit_command(&self) -> Result<State, Error> {
         if self.dirty {
-            print_error(DIRTY_ERROR, self.show_help);
-            false
+            Err(Error::Dirty)
         } else {
-            true
+            Ok(State::Stopped)
         }
     }
 
-    pub fn quit_without_checking_command(&self) -> bool {
-        true
+    pub fn quit_without_checking_command(&self) -> Result<State, Error> {
+        Ok(State::Stopped)
     }
 
-    pub fn invalid_command(&self) -> bool {
-        print_error(INVALID_COMMAND_ERROR, self.show_help);
-        false
+    pub fn invalid_command(&self) -> Result<State, Error> {
+        Err(Error::InvalidCommand)
     }
 }

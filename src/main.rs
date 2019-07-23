@@ -1,6 +1,7 @@
 mod editor;
 mod utils;
 
+use crate::utils::*;
 use crate::editor::*;
 
 use regex::Regex;
@@ -27,7 +28,9 @@ fn main() {
     if args.len() == 2 {
         let filename = args[1].clone();
         let params: Vec<&str> = vec![&filename];
-        ed.edit_command(params);
+        if let Err(e) = ed.edit_command(params) {
+            print_error(e, ed.show_help);
+        }
     }
 
     let re = Regex::new(concat!(
@@ -79,7 +82,8 @@ fn main() {
 
                 let (addr_1, addr_2) = ed.parse_addresses(&caps["addr_1"], &caps["addr_sep"], &caps["addr_2"]);
 
-                if !ed.validate_addresses(addr_1, addr_2, cmd) {
+                if !ed.is_range_ok(addr_1, addr_2, cmd) {
+                    print_error(Error::InvalidAddress, ed.show_help);
                     continue;
                 }
 
@@ -90,7 +94,7 @@ fn main() {
                     println!("# params: {:?}", params);
                 }
 
-                let exit = match cmd {
+                let res = match cmd {
                     "a"        => ed.append_command(addr_1),
                     "i"        => ed.insert_command(addr_1),
                     "c"        => ed.change_command(addr_1, addr_2),
@@ -107,8 +111,10 @@ fn main() {
                     _          => ed.invalid_command()
                 };
 
-                if exit {
-                    break;
+                match res {
+                    Ok(State::Running) => { continue },
+                    Ok(State::Stopped) => { break },
+                    Err(error) => { print_error(error, ed.show_help) }
                 }
             }
         }
