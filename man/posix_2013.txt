@@ -1,0 +1,1033 @@
+ED(1P)                     POSIX Programmer's Manual                    ED(1P)
+
+
+
+PPRROOLLOOGG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux
+       implementation of this interface may differ (consult the  corresponding
+       Linux  manual page for details of Linux behavior), or the interface may
+       not be implemented on Linux.
+
+
+NNAAMMEE
+       ed -- edit text
+
+SSYYNNOOPPSSIISS
+       ed [[-p _s_t_r_i_n_g]] [[-s]] [[_f_i_l_e]]
+
+DDEESSCCRRIIPPTTIIOONN
+       The _e_d utility is a line-oriented text editor that uses two modes: _c_o_m_-
+       _m_a_n_d  _m_o_d_e  and _i_n_p_u_t _m_o_d_e.  In command mode the input characters shall
+       be interpreted as commands, and in input mode they shall be interpreted
+       as text. See the EXTENDED DESCRIPTION section.
+
+       If an operand is ''--'', the results are unspecified.
+
+OOPPTTIIOONNSS
+       The  _e_d  utility  shall  conform  to  the  Base  Definitions  volume of
+       POSIX.1-2008, _S_e_c_t_i_o_n _1_2_._2, _U_t_i_l_i_t_y _S_y_n_t_a_x _G_u_i_d_e_l_i_n_e_s, except  for  the
+       unspecified usage of ''--''.
+
+       The following options shall be supported:
+
+       --pp _s_t_r_i_n_g Use  _s_t_r_i_n_g as the prompt string when in command mode. By de-
+                 fault, there shall be no prompt string.
+
+       --ss        Suppress the writing of byte counts by ee, EE, rr,  and  ww  com-
+                 mands and of the ''!!''  prompt after a !_c_o_m_m_a_n_d.
+
+OOPPEERRAANNDDSS
+       The following operand shall be supported:
+
+       _f_i_l_e      If the _f_i_l_e argument is given, _e_d shall simulate an ee command
+                 on the file named by the  pathname,  _f_i_l_e,  before  accepting
+                 commands from the standard input.
+
+SSTTDDIINN
+       The  standard input shall be a text file consisting of commands, as de-
+       scribed in the EXTENDED DESCRIPTION section.
+
+IINNPPUUTT FFIILLEESS
+       The input files shall be text files.
+
+EENNVVIIRROONNMMEENNTT VVAARRIIAABBLLEESS
+       The following environment variables shall affect the execution of _e_d:
+
+       _H_O_M_E      Determine the pathname of the user's home directory.
+
+       _L_A_N_G      Provide a default value for  the  internationalization  vari-
+                 ables  that are unset or null. (See the Base Definitions vol-
+                 ume of POSIX.1-2008, _S_e_c_t_i_o_n _8_._2, _I_n_t_e_r_n_a_t_i_o_n_a_l_i_z_a_t_i_o_n  _V_a_r_i_-
+                 _a_b_l_e_s  for  the  precedence of internationalization variables
+                 used to determine the values of locale categories.)
+
+       _L_C___A_L_L    If set to a non-empty string value, override  the  values  of
+                 all the other internationalization variables.
+
+       _L_C___C_O_L_L_A_T_E
+                 Determine  the locale for the behavior of ranges, equivalence
+                 classes, and multi-character collating elements within  regu-
+                 lar expressions.
+
+       _L_C___C_T_Y_P_E  Determine  the  locale for the interpretation of sequences of
+                 bytes of text data as characters (for example, single-byte as
+                 opposed  to  multi-byte  characters  in  arguments  and input
+                 files) and the behavior of character classes  within  regular
+                 expressions.
+
+       _L_C___M_E_S_S_A_G_E_S
+                 Determine the locale that should be used to affect the format
+                 and contents of diagnostic messages written to standard error
+                 and informative messages written to standard output.
+
+       _N_L_S_P_A_T_H   Determine the location of message catalogs for the processing
+                 of _L_C___M_E_S_S_A_G_E_S.
+
+AASSYYNNCCHHRROONNOOUUSS EEVVEENNTTSS
+       The _e_d utility shall take the standard action for all signals (see  the
+       ASYNCHRONOUS  EVENTS  section  in  _S_e_c_t_i_o_n _1_._4, _U_t_i_l_i_t_y _D_e_s_c_r_i_p_t_i_o_n _D_e_-
+       _f_a_u_l_t_s) with the following exceptions:
+
+       SIGINT    The _e_d utility shall interrupt its  current  activity,  write
+                 the  string  ""??\\nn""  to standard output, and return to command
+                 mode (see the EXTENDED DESCRIPTION section).
+
+       SIGHUP    If the buffer is not empty and has  changed  since  the  last
+                 write,  the  _e_d  utility shall attempt to write a copy of the
+                 buffer in a file. First, the file named eedd..hhuupp in the current
+                 directory shall be used; if that fails, the file named eedd..hhuupp
+                 in the directory named by the _H_O_M_E environment variable shall
+                 be used. In any case, the _e_d utility shall exit without writ-
+                 ing the file to the currently remembered pathname and without
+                 returning to command mode.
+
+       SIGQUIT   The _e_d utility shall ignore this event.
+
+SSTTDDOOUUTT
+       Various  editing  commands  and the prompting feature (see --pp) write to
+       standard output, as described in the EXTENDED DESCRIPTION section.
+
+SSTTDDEERRRR
+       The standard error shall be used only for diagnostic messages.
+
+OOUUTTPPUUTT FFIILLEESS
+       The output files shall be text files whose formats are dependent on the
+       editing commands given.
+
+EEXXTTEENNDDEEDD DDEESSCCRRIIPPTTIIOONN
+       The  _e_d  utility  shall  operate  on  a copy of the file it is editing;
+       changes made to the copy shall have no effect on the  file  until  a  ww
+       (write) command is given. The copy of the text is called the _b_u_f_f_e_r.
+
+       Commands  to  _e_d have a simple and regular structure: zero, one, or two
+       _a_d_d_r_e_s_s_e_s followed by a single-character _c_o_m_m_a_n_d, possibly followed  by
+       parameters  to  that command. These addresses specify one or more lines
+       in the buffer. Every command that requires addresses  has  default  ad-
+       dresses, so that the addresses very often can be omitted. If the --pp op-
+       tion is specified, the prompt string shall be written to standard  out-
+       put before each command is read.
+
+       In general, only one command can appear on a line. Certain commands al-
+       low text to be input. This text is placed in the appropriate  place  in
+       the buffer. While _e_d is accepting text, it is said to be in _i_n_p_u_t _m_o_d_e.
+       In this mode, no commands shall be recognized; all input is merely col-
+       lected.  Input  mode is terminated by entering a line consisting of two
+       characters: a <period> (''..'')  followed by a <newline>.   This  line  is
+       not considered part of the input text.
+
+   RReegguullaarr EExxpprreessssiioonnss iinn eedd
+       The _e_d utility shall support basic regular expressions, as described in
+       the Base Definitions volume of POSIX.1-2008, _S_e_c_t_i_o_n _9_._3, _B_a_s_i_c _R_e_g_u_l_a_r
+       _E_x_p_r_e_s_s_i_o_n_s.   Since  regular  expressions  in  _e_d  are  always matched
+       against single lines (excluding the terminating <newline>  characters),
+       never against any larger section of text, there is no way for a regular
+       expression to match a <newline>.
+
+       A null RE shall be equivalent to the last RE encountered.
+
+       Regular expressions are used in addresses to specify lines, and in some
+       commands (for example, the ss substitute command) to specify portions of
+       a line to be substituted.
+
+   AAddddrreesssseess iinn eedd
+       Addressing in _e_d relates to the current line.  Generally,  the  current
+       line is the last line affected by a command. The current line number is
+       the address of the current line. If the edit buffer is not  empty,  the
+       initial  value  for the current line shall be the last line in the edit
+       buffer; otherwise, zero.
+
+       Addresses shall be constructed as follows:
+
+        1. The <period> character (''..'')  shall address the current line.
+
+        2. The <dollar-sign> character (''$$'') shall address the  last  line  of
+           the edit buffer.
+
+        3. The  positive  decimal  number  _n shall address the _nth line of the
+           edit buffer.
+
+        4. The <apostrophe>-x character pair (""''xx"")  shall  address  the  line
+           marked  with  the mark name character _x, which shall be a lowercase
+           letter from the portable character set. It shall be an error if the
+           character  has  not been set to mark a line or if the line that was
+           marked is not currently present in the edit buffer.
+
+        5. A BRE enclosed by <slash> characters (''//'') shall address the  first
+           line  found  by searching forwards from the line following the cur-
+           rent line toward the end of the edit buffer  and  stopping  at  the
+           first  line  for which the line excluding the terminating <newline>
+           matches the BRE. The BRE consisting of a null BRE  delimited  by  a
+           pair  of  <slash>  characters shall address the next line for which
+           the line excluding the terminating <newline> matches the  last  BRE
+           encountered.  In addition, the second <slash> can be omitted at the
+           end of a command line. Within the BRE, a  <backslash>-<slash>  pair
+           (""\\//"")  shall represent a literal <slash> instead of the BRE delim-
+           iter. If necessary, the search shall wrap around to  the  beginning
+           of the buffer and continue up to and including the current line, so
+           that the entire buffer is searched.
+
+        6. A BRE enclosed by <question-mark> characters (''??'')   shall  address
+           the first line found by searching backwards from the line preceding
+           the current line toward the beginning of the edit buffer and  stop-
+           ping at the first line for which the line excluding the terminating
+           <newline> matches the BRE. The BRE consisting of a null BRE  delim-
+           ited  by  a pair of <question-mark> characters (""????"") shall address
+           the previous line for which  the  line  excluding  the  terminating
+           <newline> matches the last BRE encountered. In addition, the second
+           <question-mark> can be omitted at the end of a command line. Within
+           the  BRE, a <backslash>-<question-mark> pair (""\\??"") shall represent
+           a literal <question-mark> instead of the BRE delimiter.  If  neces-
+           sary,  the  search  shall  wrap around to the end of the buffer and
+           continue up to and including the current line, so that  the  entire
+           buffer is searched.
+
+        7. A <plus-sign> (''++'') or <hyphen> character (''--'') followed by a deci-
+           mal number shall address the current line plus or minus the number.
+           A  <plus-sign> or <hyphen> character not followed by a decimal num-
+           ber shall address the current line plus or minus 1.
+
+       Addresses can be followed by zero or more address  offsets,  optionally
+       <blank>-separated.  Address offsets are constructed as follows:
+
+        *  A  <plus-sign>  or  <hyphen> character followed by a decimal number
+           shall add or subtract, respectively, the indicated number of  lines
+           to  or  from  the  address. A <plus-sign> or <hyphen> character not
+           followed by a decimal number shall add or subtract 1 to or from the
+           address.
+
+        *  A decimal number shall add the indicated number of lines to the ad-
+           dress.
+
+       It shall not be an error for an intermediate address value to  be  less
+       than zero or greater than the last line in the edit buffer. It shall be
+       an error for the final address value to be less than  zero  or  greater
+       than the last line in the edit buffer. It shall be an error if a search
+       for a BRE fails to find a matching line.
+
+       Commands accept zero, one, or two addresses. If more than the  required
+       number  of  addresses  are provided to a command that requires zero ad-
+       dresses, it shall be an error. Otherwise, if  more  than  the  required
+       number  of addresses are provided to a command, the addresses specified
+       first shall be evaluated and then discarded until the maximum number of
+       valid addresses remain, for the specified command.
+
+       Addresses  shall  be  separated  from  each other by a <comma> ('',,'') or
+       <semicolon> character ('';;'').  In the case of a  <semicolon>  separator,
+       the  current  line  (''..'')   shall be set to the first address, and only
+       then will the second address be calculated. This feature can be used to
+       determine  the  starting  line for forwards and backwards searches; see
+       rules 5. and 6.
+
+       Addresses can be omitted on either side of the <comma>  or  <semicolon>
+       separator,  in  which case the resulting address pairs shall be as fol-
+       lows:
+
+                              +----------+-------------+
+                              |SSppeecciiffiieedd |  RReessuullttiinngg  |
+                              +----------+-------------+
+                              |,         | 1 , $       |
+                              |, addr    | 1 , addr    |
+                              |addr ,    | addr , addr |
+                              |;         | . ; $       |
+                              |; addr    | . ; addr    |
+                              |addr ;    | addr ; addr |
+                              +----------+-------------+
+       Any <blank> characters included between addresses, address  separators,
+       or address offsets shall be ignored.
+
+   CCoommmmaannddss iinn eedd
+       In  the  following list of _e_d commands, the default addresses are shown
+       in parentheses. The number of addresses shown in the default  shall  be
+       the number expected by the command. The parentheses are not part of the
+       address; they show that the given addresses are the default.
+
+       It is generally invalid for more than one command to appear on a  line.
+       However,  any  command (except ee, EE, ff, qq, QQ, rr, ww, and !!)  can be suf-
+       fixed by the letter ll, nn, or pp; in which case, except for the ll, nn, and
+       pp commands, the command shall be executed and then the new current line
+       shall be written as described below under the ll,  nn,  and  pp  commands.
+       When  an ll, nn, or pp suffix is used with an ll, nn, or pp command, the com-
+       mand shall write to standard output as described below, but it  is  un-
+       specified  whether  the suffix writes the current line again in the re-
+       quested format or whether the suffix has no effect. For example, the ppll
+       command  (base  pp command with an ll suffix) shall either write just the
+       current line or write it twice--once as specified for  pp  and  once  as
+       specified  for  ll.  Also, the gg, GG, vv, and VV commands shall take a com-
+       mand as a parameter.
+
+       Each address component can be preceded by zero or more <blank>  charac-
+       ters.  The command letter can be preceded by zero or more <blank> char-
+       acters. If a suffix letter (ll, nn, or pp) is given, the application shall
+       ensure that it immediately follows the command.
+
+       The  ee,  EE, ff, rr, and ww commands shall take an optional _f_i_l_e parameter,
+       separated from the command letter by one or more <blank> characters.
+
+       If changes have been made in the buffer since the last ww  command  that
+       wrote  the  entire buffer, _e_d shall warn the user if an attempt is made
+       to destroy the editor buffer via the ee or qq commands.  The  _e_d  utility
+       shall write the string:
+
+           ""??\\nn""
+
+       (followed  by  an explanatory message if _h_e_l_p _m_o_d_e has been enabled via
+       the HH command) to standard output and shall continue  in  command  mode
+       with  the  current  line number unchanged. If the ee or qq command is re-
+       peated with no intervening command, it shall take effect.
+
+       If  a  terminal  disconnect  (see  the  Base  Definitions   volume   of
+       POSIX.1-2008,  _C_h_a_p_t_e_r _1_1, _G_e_n_e_r_a_l _T_e_r_m_i_n_a_l _I_n_t_e_r_f_a_c_e, Modem Disconnect
+       and Closing a Device Terminal), is detected:
+
+        *  If accompanied by a SIGHUP signal, the _e_d utility shall operate  as
+           described in the ASYNCHRONOUS EVENTS section for a SIGHUP signal.
+
+        *  If  not accompanied by a SIGHUP signal, the _e_d utility shall act as
+           if an end-of-file had been detected on standard input.
+
+       If an end-of-file is detected on standard input:
+
+        *  If the _e_d utility is in input mode, _e_d shall terminate  input  mode
+           and  return to command mode. It is unspecified if any partially en-
+           tered lines (that is, input text without a  terminating  <newline>)
+           are discarded from the input text.
+
+        *  If  the  _e_d utility is in command mode, it shall act as if a qq com-
+           mand had been entered.
+
+       If the closing delimiter of an RE or of a replacement string (for exam-
+       ple, ''//'') in a gg, GG, ss, vv, or VV command would be the last character be-
+       fore a <newline>, that delimiter can be omitted, in which case the  ad-
+       dressed line shall be written. For example, the following pairs of com-
+       mands are equivalent:
+
+           ss//ss11//ss22   ss//ss11//ss22//pp
+           gg//ss11      gg//ss11//pp
+           ??ss11       ??ss11??
+
+       If an invalid command is entered, _e_d shall write the string:
+
+           ""??\\nn""
+
+       (followed by an explanatory message if _h_e_l_p _m_o_d_e has been  enabled  via
+       the  HH  command)  to standard output and shall continue in command mode
+       with the current line number unchanged.
+
+   AAppppeenndd CCoommmmaanndd
+       _S_y_n_o_p_s_i_s:
+                     ((..))aa
+                     <<_t_e_x_t>
+                     .
+
+       The aa command shall read the given text and append  it  after  the  ad-
+       dressed  line;  the current line number shall become the address of the
+       last inserted line or, if there were none, the addressed line.  Address
+       0  shall be valid for this command; it shall cause the appended text to
+       be placed at the beginning of the buffer.
+
+   CChhaannggee CCoommmmaanndd
+       _S_y_n_o_p_s_i_s:
+                     ((..,,..))cc
+                     <<_t_e_x_t>
+                     .
+
+       The cc command shall delete the addressed lines, then accept input  text
+       that replaces these lines; the current line shall be set to the address
+       of the last line input; or, if there were none, at the line  after  the
+       last  line  deleted; if the lines deleted were originally at the end of
+       the buffer, the current line number shall be set to the address of  the
+       new  last line; if no lines remain in the buffer, the current line num-
+       ber shall be set to zero. Address 0 shall be valid for this command; it
+       shall be interpreted as if address 1 were specified.
+
+   DDeelleettee CCoommmmaanndd
+       _S_y_n_o_p_s_i_s:
+                     ((..,,..))dd
+
+       The dd command shall delete the addressed lines from the buffer. The ad-
+       dress of the line after the last line deleted shall become the  current
+       line  number;  if  the  lines deleted were originally at the end of the
+       buffer, the current line number shall be set to the address of the  new
+       last  line;  if  no lines remain in the buffer, the current line number
+       shall be set to zero.
+
+   EEddiitt CCoommmmaanndd
+       _S_y_n_o_p_s_i_s:
+                     ee [[_f_i_l_e]]
+
+       The ee command shall delete the entire contents of the buffer  and  then
+       read  in  the file named by the pathname _f_i_l_e.  The current line number
+       shall be set to the address of the last line of the buffer. If no path-
+       name is given, the currently remembered pathname, if any, shall be used
+       (see the ff command). The number of bytes read shall be written to stan-
+       dard  output, unless the --ss option was specified, in the following for-
+       mat:
+
+           ""%%dd\\nn"",, <<_n_u_m_b_e_r _o_f _b_y_t_e_s _r_e_a_d>
+
+       The name _f_i_l_e shall be remembered for possible use as a  default  path-
+       name in subsequent ee, EE, rr, and ww commands. If _f_i_l_e is replaced by ''!!'',
+       the rest of the line shall be taken to be a shell  command  line  whose
+       output is to be read. Such a shell command line shall not be remembered
+       as the current _f_i_l_e.  All marks shall be discarded upon the  completion
+       of  a  successful  ee  command. If the buffer has changed since the last
+       time the entire buffer was written, the user shall be  warned,  as  de-
+       scribed previously.
+
+   EEddiitt WWiitthhoouutt CChheecckkiinngg CCoommmmaanndd
+       _S_y_n_o_p_s_i_s:
+                     EE [[_f_i_l_e]]
+
+       The  EE  command  shall possess all properties and restrictions of the ee
+       command except that the editor shall  not  check  to  see  whether  any
+       changes have been made to the buffer since the last ww command.
+
+   FFiilleennaammee CCoommmmaanndd
+       _S_y_n_o_p_s_i_s:
+                     ff [[_f_i_l_e]]
+
+       If  _f_i_l_e  is given, the ff command shall change the currently remembered
+       pathname to _f_i_l_e; whether the name is changed or  not,  it  shall  then
+       write  the (possibly new) currently remembered pathname to the standard
+       output in the following format:
+
+           ""%%ss\\nn"",, <<_p_a_t_h_n_a_m_e>
+
+       The current line number shall be unchanged.
+
+   GGlloobbaall CCoommmmaanndd
+       _S_y_n_o_p_s_i_s:
+                     ((11,,$$))gg//_R_E/_c_o_m_m_a_n_d _l_i_s_t
+
+       In the gg command, the first step shall be to mark every line for  which
+       the  line  excluding  the  terminating  <newline> matches the given RE.
+       Then, going sequentially from the beginning of the file to the  end  of
+       the  file,  the  given  _c_o_m_m_a_n_d  _l_i_s_t shall be executed for each marked
+       line, with the current line number set to the address of that line. Any
+       line modified by the _c_o_m_m_a_n_d _l_i_s_t shall be unmarked. When the gg command
+       completes, the current line number shall have the value assigned by the
+       last command in the _c_o_m_m_a_n_d _l_i_s_t.  If there were no matching lines, the
+       current line number shall not be changed. A single command or the first
+       of  a list of commands shall appear on the same line as the global com-
+       mand. All lines of a multi-line list except  the  last  line  shall  be
+       ended with a <backslash> preceding the terminating <newline>; the aa, ii,
+       and cc commands and associated input are permitted. The ''..''  terminating
+       input  mode  can be omitted if it would be the last line of the _c_o_m_m_a_n_d
+       _l_i_s_t. An empty _c_o_m_m_a_n_d _l_i_s_t shall be equivalent to the pp  command.  The
+       use of the gg, GG, vv, VV, and !!  commands in the _c_o_m_m_a_n_d _l_i_s_t produces un-
+       defined results. Any character other than <space> or <newline>  can  be
+       used  instead of a <slash> to delimit the RE. Within the RE, the RE de-
+       limiter itself can be used as a literal character if it is preceded  by
+       a <backslash>.
+
+   IInntteerraaccttiivvee GGlloobbaall CCoommmmaanndd
+       _S_y_n_o_p_s_i_s:
+                     ((11,,$$))GG//_R_E/
+
+       In  the GG command, the first step shall be to mark every line for which
+       the line excluding the terminating  <newline>  matches  the  given  RE.
+       Then, for every such line, that line shall be written, the current line
+       number shall be set to the address of that line, and  any  one  command
+       (other  than one of the aa, cc, ii, gg, GG, vv, and VV commands) shall be read
+       and executed. A <newline> shall act as a null command (causing  no  ac-
+       tion to be taken on the current line); an ''&&'' shall cause the re-execu-
+       tion of the most recent non-null command executed  within  the  current
+       invocation of GG.  Note that the commands input as part of the execution
+       of the GG command can address and affect any lines in  the  buffer.  Any
+       line  modified by the command shall be unmarked. The final value of the
+       current line number shall be the value set by the last command success-
+       fully executed. (Note that the last command successfully executed shall
+       be the GG command itself if a command fails or the null command is spec-
+       ified.)  If there were no matching lines, the current line number shall
+       not be changed. The GG command can be terminated by a SIGINT signal. Any
+       character  other  than  <space>  or  <newline> can be used instead of a
+       <slash> to delimit the RE and the replacement. Within the  RE,  the  RE
+       delimiter  itself  can be used as a literal character if it is preceded
+       by a <backslash>.
+
+   HHeellpp CCoommmmaanndd
+       _S_y_n_o_p_s_i_s:
+                     hh
+
+       The hh command shall write a short message to standard output  that  ex-
+       plains  the  reason  for the most recent ''??''  notification. The current
+       line number shall be unchanged.
+
+   HHeellpp--MMooddee CCoommmmaanndd
+       _S_y_n_o_p_s_i_s:
+                     HH
+
+       The HH command shall cause _e_d to enter a mode  in  which  help  messages
+       (see  the hh command) shall be written to standard output for all subse-
+       quent ''??''  notifications. The HH command  alternately  shall  turn  this
+       mode  on and off; it is initially off. If the help-mode is being turned
+       on, the HH command also explains  the  previous  ''??''   notification,  if
+       there was one. The current line number shall be unchanged.
+
+   IInnsseerrtt CCoommmmaanndd
+       _S_y_n_o_p_s_i_s:
+                     ((..))ii
+                     <<_t_e_x_t>
+                     .
+
+       The  ii  command  shall insert the given text before the addressed line;
+       the current line is set to the last inserted  line  or,  if  there  was
+       none,  to  the  addressed line. This command differs from the aa command
+       only in the placement of the input text. Address 0 shall be  valid  for
+       this command; it shall be interpreted as if address 1 were specified.
+
+   JJooiinn CCoommmmaanndd
+       _S_y_n_o_p_s_i_s:
+                     ((..,,..++11))jj
+
+       The  jj  command shall join contiguous lines by removing the appropriate
+       <newline> characters. If exactly one address  is  given,  this  command
+       shall do nothing. If lines are joined, the current line number shall be
+       set to the address of the joined line; otherwise, the current line num-
+       ber shall be unchanged.
+
+   MMaarrkk CCoommmmaanndd
+       _S_y_n_o_p_s_i_s:
+                     ((..))kk_x
+
+       The  kk command shall mark the addressed line with name _x, which the ap-
+       plication shall ensure is a lowercase letter from the portable  charac-
+       ter  set.  The  address ""''xx"" shall then refer to this line; the current
+       line number shall be unchanged.
+
+   LLiisstt CCoommmmaanndd
+       _S_y_n_o_p_s_i_s:
+                     ((..,,..))ll
+
+       The ll command shall write to standard output the addressed lines  in  a
+       visually  unambiguous  form.  The characters listed in the Base Defini-
+       tions volume of POSIX.1-2008, _T_a_b_l_e _5_-_1, _E_s_c_a_p_e _S_e_q_u_e_n_c_e_s  _a_n_d  _A_s_s_o_c_i_-
+       _a_t_e_d  _A_c_t_i_o_n_s (''\\\\'', ''\\aa'', ''\\bb'', ''\\ff'', ''\\rr'', ''\\tt'', ''\\vv'') shall be writ-
+       ten as the corresponding escape sequence; the ''\\nn'' in that table is not
+       applicable.  Non-printable characters not in the table shall be written
+       as one three-digit octal number (with a preceding  <backslash>  charac-
+       ter) for each byte in the character (most significant byte first).
+
+       Long  lines  shall  be  folded,  with the point of folding indicated by
+       <newline> preceded by a <backslash>; the length at which folding occurs
+       is  unspecified,  but  should be appropriate for the output device. The
+       end of each line shall be marked with a ''$$'', and ''$$'' characters  within
+       the  text  shall be written with a preceding <backslash>.  An ll command
+       can be appended to any other command other than ee, EE, ff, qq, QQ, rr, ww, or
+       !!.   The  current  line  number shall be set to the address of the last
+       line written.
+
+   MMoovvee CCoommmmaanndd
+       _S_y_n_o_p_s_i_s:
+                     ((..,,..))mm_a_d_d_r_e_s_s
+
+       The mm command shall reposition the addressed lines after the  line  ad-
+       dressed by _a_d_d_r_e_s_s.  Address 0 shall be valid for _a_d_d_r_e_s_s and cause the
+       addressed lines to be moved to the beginning of the buffer. It shall be
+       an  error if address _a_d_d_r_e_s_s falls within the range of moved lines. The
+       current line number shall be set to the address of the last line moved.
+
+   NNuummbbeerr CCoommmmaanndd
+       _S_y_n_o_p_s_i_s:
+                     ((..,,..))nn
+
+       The nn command shall write to standard output the addressed lines,  pre-
+       ceding  each line by its line number and a <tab>; the current line num-
+       ber shall be set to the address of the last line written. The nn command
+       can be appended to any command other than ee, EE, ff, qq, QQ, rr, ww, or !!.
+
+   PPrriinntt CCoommmmaanndd
+       _S_y_n_o_p_s_i_s:
+                     ((..,,..))pp
+
+       The  pp  command shall write to standard output the addressed lines; the
+       current line number shall be set to the address of the last line  writ-
+       ten.  The  pp command can be appended to any command other than ee, EE, ff,
+       qq, QQ, rr, ww, or !!.
+
+   PPrroommpptt CCoommmmaanndd
+       _S_y_n_o_p_s_i_s:
+                     PP
+
+       The PP command shall cause _e_d to prompt with  an  <asterisk>  (''**'')  (or
+       _s_t_r_i_n_g,  if --pp is specified) for all subsequent commands. The PP command
+       alternatively shall turn this mode on and off; it shall be initially on
+       if  the --pp option is specified; otherwise, off. The current line number
+       shall be unchanged.
+
+   QQuuiitt CCoommmmaanndd
+       _S_y_n_o_p_s_i_s:
+                     qq
+
+       The qq command shall cause _e_d to exit. If the buffer has  changed  since
+       the  last time the entire buffer was written, the user shall be warned,
+       as described previously.
+
+   QQuuiitt WWiitthhoouutt CChheecckkiinngg CCoommmmaanndd
+       _S_y_n_o_p_s_i_s:
+                     QQ
+
+       The QQ command shall cause _e_d to exit without checking  whether  changes
+       have been made in the buffer since the last ww command.
+
+   RReeaadd CCoommmmaanndd
+       _S_y_n_o_p_s_i_s:
+                     (($$))rr [[_f_i_l_e]]
+
+       The rr command shall read in the file named by the pathname _f_i_l_e and ap-
+       pend it after the addressed line. If no _f_i_l_e  argument  is  given,  the
+       currently  remembered  pathname, if any, shall be used (see the ee and ff
+       commands). The currently remembered pathname shall not be  changed  un-
+       less  there  is  no remembered pathname. Address 0 shall be valid for rr
+       and shall cause the file to be read at the beginning of the buffer.  If
+       the  read  is successful, and --ss was not specified, the number of bytes
+       read shall be written to standard output in the following format:
+
+           ""%%dd\\nn"",, <<_n_u_m_b_e_r _o_f _b_y_t_e_s _r_e_a_d>
+
+       The current line number shall be set to the address of  the  last  line
+       read  in.  If  _f_i_l_e  is  replaced by ''!!'', the rest of the line shall be
+       taken to be a shell command line whose output is to  be  read.  Such  a
+       shell command line shall not be remembered as the current pathname.
+
+   SSuubbssttiittuuttee CCoommmmaanndd
+       _S_y_n_o_p_s_i_s:
+                     ((..,,..))ss//_R_E/_r_e_p_l_a_c_e_m_e_n_t/_f_l_a_g_s
+
+       The ss command shall search each addressed line for an occurrence of the
+       specified RE and replace  either  the  first  or  all  (non-overlapped)
+       matched  strings with the _r_e_p_l_a_c_e_m_e_n_t; see the following description of
+       the gg suffix. It is an error if the substitution  fails  on  every  ad-
+       dressed line. Any character other than <space> or <newline> can be used
+       instead of a <slash> to delimit the RE and the replacement. Within  the
+       RE, the RE delimiter itself can be used as a literal character if it is
+       preceded by a <backslash>.  The current line shall be set  to  the  ad-
+       dress of the last line on which a substitution occurred.
+
+       An  <ampersand> (''&&'') appearing in the _r_e_p_l_a_c_e_m_e_n_t shall be replaced by
+       the string matching the RE on the current line.  The special meaning of
+       ''&&''  in  this context can be suppressed by preceding it by <backslash>.
+       As a more general feature, the characters ''\\nn'', where  _n  is  a  digit,
+       shall  be replaced by the text matched by the corresponding back-refer-
+       ence expression. If the corresponding  back-reference  expression  does
+       not  match,  then  the  characters  ''\\nn'' shall be replaced by the empty
+       string. When the character ''%%'' is the only character  in  the  _r_e_p_l_a_c_e_-
+       _m_e_n_t,  the _r_e_p_l_a_c_e_m_e_n_t used in the most recent substitute command shall
+       be used as the _r_e_p_l_a_c_e_m_e_n_t in the current substitute command; if  there
+       was no previous substitute command, the use of ''%%'' in this manner shall
+       be an error. The ''%%'' shall lose its special meaning when it is in a re-
+       placement  string of more than one character or is preceded by a <back-
+       slash>.  For each <backslash> encountered in scanning _r_e_p_l_a_c_e_m_e_n_t  from
+       beginning  to end, the following character shall lose its special mean-
+       ing (if any). It is unspecified what special meaning is  given  to  any
+       character other than <backslash>, ''&&'', ''%%'', or digits.
+
+       A  line  can be split by substituting a <newline> into it. The applica-
+       tion shall ensure it escapes the <newline> in the _r_e_p_l_a_c_e_m_e_n_t  by  pre-
+       ceding  it by <backslash>.  Such substitution cannot be done as part of
+       a gg or vv _c_o_m_m_a_n_d _l_i_s_t.  The current line number shall be set to the ad-
+       dress of the last line on which a substitution is performed. If no sub-
+       stitution is performed, the current line number shall be unchanged.  If
+       a  line  is split, a substitution shall be considered to have been per-
+       formed on each of the new lines for the purpose of determining the  new
+       current  line  number.  A substitution shall be considered to have been
+       performed even if the replacement string is  identical  to  the  string
+       that it replaces.
+
+       The  application  shall  ensure that the value of _f_l_a_g_s is zero or more
+       of:
+
+       _c_o_u_n_t   Substitute for the _c_o_u_n_tth occurrence only of the RE  found  on
+               each addressed line.
+
+       gg       Globally substitute for all non-overlapping instances of the RE
+               rather than just the first one. If both gg and _c_o_u_n_t are  speci-
+               fied, the results are unspecified.
+
+       ll       Write to standard output the final line in which a substitution
+               was made. The line shall be written in the format specified for
+               the ll command.
+
+       nn       Write to standard output the final line in which a substitution
+               was made. The line shall be written in the format specified for
+               the nn command.
+
+       pp       Write to standard output the final line in which a substitution
+               was made. The line shall be written in the format specified for
+               the pp command.
+
+   CCooppyy CCoommmmaanndd
+       _S_y_n_o_p_s_i_s:
+                     ((..,,..))tt_a_d_d_r_e_s_s
+
+       The  tt command shall be equivalent to the mm command, except that a copy
+       of the addressed lines shall be placed after address _a_d_d_r_e_s_s (which can
+       be  0); the current line number shall be set to the address of the last
+       line added.
+
+   UUnnddoo CCoommmmaanndd
+       _S_y_n_o_p_s_i_s:
+                     uu
+
+       The uu command shall nullify the effect of the most recent command  that
+       modified  anything in the buffer, namely the most recent aa, cc, dd, gg, ii,
+       jj, mm, rr, ss, tt, uu, vv, GG, or VV command. All changes made to the buffer by
+       a  gg,  GG, vv, or VV global command shall be undone as a single change; if
+       no changes were made by the global command (such as with gg/RE/pp), the uu
+       command  shall  have no effect. The current line number shall be set to
+       the value it had immediately before the command being undone started.
+
+   GGlloobbaall NNoonn--MMaattcchheedd CCoommmmaanndd
+       _S_y_n_o_p_s_i_s:
+                     ((11,,$$))vv/_R_E/_c_o_m_m_a_n_d _l_i_s_t
+
+       This command shall be equivalent to the global command  gg  except  that
+       the  lines  that  are  marked  during the first step shall be those for
+       which the line excluding the terminating <newline> does not  match  the
+       RE.
+
+   IInntteerraaccttiivvee GGlloobbaall NNoott--MMaattcchheedd CCoommmmaanndd
+       _S_y_n_o_p_s_i_s:
+                     ((11,,$$))VV/_R_E/
+
+       This  command  shall  be equivalent to the interactive global command GG
+       except that the lines that are marked during the first  step  shall  be
+       those  for  which the line excluding the terminating <newline> does not
+       match the RE.
+
+   WWrriittee CCoommmmaanndd
+       _S_y_n_o_p_s_i_s:
+                     ((11,,$$))ww [[_f_i_l_e]]
+
+       The ww command shall write the addressed lines into the  file  named  by
+       the  pathname  _f_i_l_e.  The command shall create the file, if it does not
+       exist, or shall replace the contents of the  existing  file.  The  cur-
+       rently  remembered pathname shall not be changed unless there is no re-
+       membered pathname.  If no pathname is given, the  currently  remembered
+       pathname, if any, shall be used (see the ee and ff commands); the current
+       line number shall be unchanged. If the command is successful, the  num-
+       ber of bytes written shall be written to standard output, unless the --ss
+       option was specified, in the following format:
+
+           ""%%dd\\nn"",, <<_n_u_m_b_e_r _o_f _b_y_t_e_s _w_r_i_t_t_e_n>
+
+       If _f_i_l_e begins with ''!!'', the rest of the line shall be taken  to  be  a
+       shell  command  line whose standard input shall be the addressed lines.
+       Such a shell command line shall not be remembered as the current  path-
+       name. This usage of the write command with ''!!''  shall not be considered
+       as a ``last ww command that wrote the entire buffer'', as described pre-
+       viously;  thus, this alone shall not prevent the warning to the user if
+       an attempt is made to destroy the editor buffer via the  ee  or  qq  com-
+       mands.
+
+   LLiinnee NNuummbbeerr CCoommmmaanndd
+       _S_y_n_o_p_s_i_s:
+                     (($$))==
+
+       The line number of the addressed line shall be written to standard out-
+       put in the following format:
+
+           ""%%dd\\nn"",, <<_l_i_n_e _n_u_m_b_e_r>
+
+       The current line number shall be unchanged by this command.
+
+   SShheellll EEssccaappee CCoommmmaanndd
+       _S_y_n_o_p_s_i_s:
+                     !!_c_o_m_m_a_n_d
+
+       The remainder of the line after the ''!!''  shall be sent to  the  command
+       interpreter  to be interpreted as a shell command line. Within the text
+       of that shell command line, the unescaped character ''%%''  shall  be  re-
+       placed  with  the  remembered  pathname; if a ''!!''  appears as the first
+       character of the command, it shall be replaced with  the  text  of  the
+       previous  shell  command executed via ''!!''.  Thus, ""!!!!"" shall repeat the
+       previous !_c_o_m_m_a_n_d. If any replacements of ''%%'' or  ''!!''   are  performed,
+       the  modified  line shall be written to the standard output before _c_o_m_-
+       _m_a_n_d is executed. The !!  command shall write:
+
+           ""!!\\nn""
+
+       to standard output upon completion, unless the --ss option is  specified.
+       The current line number shall be unchanged.
+
+   NNuullll CCoommmmaanndd
+       _S_y_n_o_p_s_i_s:
+                     ((..++11))
+
+       An  address  alone on a line shall cause the addressed line to be writ-
+       ten. A <newline> alone shall be equivalent to ""++11pp"".  The current  line
+       number shall be set to the address of the written line.
+
+EEXXIITT SSTTAATTUUSS
+       The following exit values shall be returned:
+
+        0    Successful completion without any file or command errors.
+
+       >0    An error occurred.
+
+CCOONNSSEEQQUUEENNCCEESS OOFF EERRRROORRSS
+       When  an  error in the input script is encountered, or when an error is
+       detected that is a consequence of the data (not) present in the file or
+       due to an external condition such as a read or write error:
+
+        *  If the standard input is a terminal device file, all input shall be
+           flushed, and a new command read.
+
+        *  If the standard input is a regular file, _e_d shall terminate with  a
+           non-zero exit status.
+
+       _T_h_e _f_o_l_l_o_w_i_n_g _s_e_c_t_i_o_n_s _a_r_e _i_n_f_o_r_m_a_t_i_v_e_.
+
+AAPPPPLLIICCAATTIIOONN UUSSAAGGEE
+       Because  of  the  extremely terse nature of the default error messages,
+       the prudent script writer begins the _e_d input commands with an  HH  com-
+       mand, so that if any errors do occur at least some clue as to the cause
+       is made available.
+
+       In earlier versions of this standard, an obsolescent -- option  was  de-
+       scribed.  This  is  no longer specified. Applications should use the --ss
+       option. Using -- as a _f_i_l_e operand  now  produces  unspecified  results.
+       This  allows implementations to continue to support the former required
+       behavior.
+
+EEXXAAMMPPLLEESS
+       None.
+
+RRAATTIIOONNAALLEE
+       The initial description of this utility was adapted from the  SVID.  It
+       contains  some  features not found in Version 7 or BSD-derived systems.
+       Some of the differences between the POSIX and BSD _e_d utilities include,
+       but need not be limited to:
+
+        *  The  BSD -- option does not suppress the ''!!''  prompt after a !!  com-
+           mand.
+
+        *  BSD does not support the special meanings of the ''%%'' and ''!!''  char-
+           acters within a !!  command.
+
+        *  BSD does not support the _a_d_d_r_e_s_s_e_s '';;'' and '',,''.
+
+        *  BSD  allows  the  command/suffix pairs pppp, llll, and so on, which are
+           unspecified in this volume of POSIX.1-2008.
+
+        *  BSD does not support the ''!!''  character part of the ee, rr, or ww com-
+           mands.
+
+        *  A  failed  gg  command  in BSD sets the line number to the last line
+           searched if there are no matches.
+
+        *  BSD does not default the _c_o_m_m_a_n_d _l_i_s_t to the pp command.
+
+        *  BSD does not support the GG, hh, HH, nn, or VV commands.
+
+        *  On BSD, if there is no inserted text, the  insert  command  changes
+           the  current  line to the referenced line -1; that is, the line be-
+           fore the specified line.
+
+        *  On BSD, the _j_o_i_n command with only a  single  address  changes  the
+           current line to that address.
+
+        *  BSD  does not support the PP command; moreover, in BSD it is synony-
+           mous with the pp command.
+
+        *  BSD does not support the _u_n_d_o of the commands jj, mm, rr, ss, or tt.
+
+        *  The Version 7 _e_d command WW, and the BSD _e_d commands WW,  wwqq,  and  zz
+           are not present in this volume of POSIX.1-2008.
+
+       The --ss option was added to allow the functionality of the removed -- op-
+       tion in a manner compatible with the Utility Syntax Guidelines.
+
+       In early proposals there was a limit, {ED_FILE_MAX}, that described the
+       historical  limitations of some _e_d utilities in their handling of large
+       files; some of these have had problems with files  larger  than  100000
+       bytes.  It  was this limitation that prompted much of the desire to in-
+       clude a _s_p_l_i_t command in this volume of POSIX.1-2008. Since this  limit
+       was  removed, this volume of POSIX.1-2008 requires that implementations
+       document the file size limits imposed by _e_d in  the  conformance  docu-
+       ment.  The  limit {ED_LINE_MAX} was also removed; therefore, the global
+       limit {LINE_MAX} is used for input and output lines.
+
+       The manner in which the ll command writes non-printable  characters  was
+       changed  to  avoid the historical backspace-overstrike method. On video
+       display terminals, the overstrike is ambiguous because  most  terminals
+       simply  replace  overstruck  characters, making the ll format not useful
+       for its intended purpose of unambiguously understanding the content  of
+       the  line. The historical <backslash>-escapes were also ambiguous. (The
+       string ""aa\\00001111"" could represent a line containing those six  characters
+       or  a  line  containing  the three characters ''aa'', a byte with a binary
+       value of 1, and a 1.) In the format required here,  a  <backslash>  ap-
+       pearing  in the line is written as ""\\\\"" so that the output is truly un-
+       ambiguous. The method of marking the ends of lines was adopted from the
+       _e_x  editor  and  is required for any line ending in <space> characters;
+       the ''$$'' is placed on all lines so that a real ''$$'' at the end of a  line
+       cannot be misinterpreted.
+
+       Earlier  versions  of  this  standard  allowed for implementations with
+       bytes other than eight bits, but this has been modified  in  this  ver-
+       sion.
+
+       The  description of how a NUL is written was removed. The NUL character
+       cannot be in text files, and this volume  of  POSIX.1-2008  should  not
+       dictate behavior in the case of undefined, erroneous input.
+
+       Unlike  some  of the other editing utilities, the filenames accepted by
+       the EE, ee, RR, and rr commands are not patterns.
+
+       Early proposals stated that the --pp option worked only when standard in-
+       put  was  associated  with  a terminal device. This has been changed to
+       conform to historical implementations, thereby allowing applications to
+       interpose themselves between a user and the _e_d utility.
+
+       The  form  of the substitute command that uses the nn suffix was limited
+       in some historical documentation (where this was described  incorrectly
+       as  ``backreferencing'').  This limit has been omitted because there is
+       no reason why an editor processing lines of  {LINE_MAX}  length  should
+       have this restriction. The command ss//xx//XX//22004477 should be able to substi-
+       tute the 2047th occurrence of ''xx'' on a line.
+
+       The use of printing commands with printing suffixes (such  as  ppnn,  llpp,
+       and  so  on) was made unspecified because BSD-based systems allow this,
+       whereas System V does not.
+
+       Some BSD-based systems exit immediately upon receipt of end-of-file  if
+       all  of  the  lines in the file have been deleted. Since this volume of
+       POSIX.1-2008 refers to the qq command in this instance, such behavior is
+       not allowed.
+
+       Some  historical implementations returned exit status zero even if com-
+       mand errors had occurred;  this  is  not  allowed  by  this  volume  of
+       POSIX.1-2008.
+
+       Some  historical  implementations contained a bug that allowed a single
+       <period> to be entered in input mode as <backslash> <period> <newline>.
+       This  is  not allowed by _e_d because there is no description of escaping
+       any of the characters in input mode; <backslash> characters are entered
+       into the buffer exactly as typed. The typical method of entering a sin-
+       gle <period> has been to precede it with another character and then use
+       the substitute command to delete that character.
+
+       It is difficult under some modes of some versions of historical operat-
+       ing system terminal drivers to distinguish between an end-of-file  con-
+       dition and terminal disconnect. POSIX.1-2008 does not require implemen-
+       tations to distinguish between the two situations, which  permits  his-
+       torical  implementations  of  the _e_d utility on historical platforms to
+       conform. Implementations are encouraged to distinguish between the two,
+       if possible, and take appropriate action on terminal disconnect.
+
+       Historically,  _e_d  accepted  a zero address for the aa and rr commands in
+       order to insert text at the start of the edit buffer. When  the  buffer
+       was  empty  the command ..== returned zero. POSIX.1-2008 requires confor-
+       mance to historical practice.
+
+       For consistency with the aa and rr commands and better  user  functional-
+       ity,  the  ii  and cc commands must also accept an address of 0, in which
+       case 0_i is treated as 1_i and likewise for the cc command.
+
+       All of the following are valid addresses:
+
+       +++         Three lines after the current line.
+
+       /_p_a_t_t_e_r_n/-  One line before the next occurrence of pattern.
+
+       -2          Two lines before the current line.
+
+       3 ---- 2    Line one (note the intermediate negative address).
+
+       1 2 3       Line six.
+
+       Any number of addresses can be provided to commands  taking  addresses;
+       for  example,  ""11,,22,,33,,44,,55pp""  prints  lines  4 and 5, because two is the
+       greatest valid number of addresses accepted by the pprriinntt command. This,
+       in  combination with the <semicolon> delimiter, permits users to create
+       commands based on ordered patterns in the file. For example,  the  com-
+       mand  ""33;;//ffoooo//;;++22pp""  will display the first line after line 3 that con-
+       tains the pattern _f_o_o, plus the next two lines. Note that  the  address
+       ""33;;"" must still be evaluated before being discarded, because the search
+       origin for the ""//ffoooo//"" command depends on this.
+
+       Historically, _e_d disallowed address chains, as  discussed  above,  con-
+       sisting solely of <comma> or <semicolon> separators; for example, "",,,,,,""
+       or "";;;;;;"" were considered an error. For consistency of address  specifi-
+       cation,  this restriction is removed. The following table lists some of
+       the address forms now possible:
+
+           +--------+-------+-------+------------+-----------------------+
+           |AAddddrreessss | AAddddrr11 | AAddddrr22 |   SSttaattuuss   |        CCoommmmeenntt        |
+           +--------+-------+-------+------------+-----------------------+
+           |7,      |   7   |   7   | Historical |                       |
+           |7,5,    |   5   |   5   | Historical |                       |
+           |7,5,9   |   5   |   9   | Historical |                       |
+           |7,9     |   7   |   9   | Historical |                       |
+           |7,+     |   7   |   8   | Historical |                       |
+           |,       |   1   |   $   | Historical |                       |
+           |,7      |   1   |   7   | Extension  |                       |
+           |,,      |   $   |   $   | Extension  |                       |
+           |,;      |   $   |   $   | Extension  |                       |
+           |7;      |   7   |   7   | Historical |                       |
+           |7;5;    |   5   |   5   | Historical |                       |
+           |7;5;9   |   5   |   9   | Historical |                       |
+           |7;5,9   |   5   |   9   | Historical |                       |
+           |7;$;4   |   $   |   4   | Historical | Valid, but erroneous. |
+           |7;9     |   7   |   9   | Historical |                       |
+           |7;+     |   7   |   8   | Historical |                       |
+           |;       |   .   |   $   | Historical |                       |
+           |;7      |   .   |   7   | Extension  |                       |
+           |;;      |   $   |   $   | Extension  |                       |
+           |;,      |   $   |   $   | Extension  |                       |
+           +--------+-------+-------+------------+-----------------------+
+       Historically, _e_d accepted the ''^^'' character as  an  address,  in  which
+       case  it was identical to the <hyphen> character. POSIX.1-2008 does not
+       require or prohibit this behavior.
+
+FFUUTTUURREE DDIIRREECCTTIIOONNSS
+       None.
+
+SSEEEE AALLSSOO
+       _S_e_c_t_i_o_n _1_._4, _U_t_i_l_i_t_y _D_e_s_c_r_i_p_t_i_o_n _D_e_f_a_u_l_t_s, _e_x, _s_e_d, _s_h, _v_i
+
+       The Base Definitions volume of  POSIX.1-2008,  _T_a_b_l_e  _5_-_1,  _E_s_c_a_p_e  _S_e_-
+       _q_u_e_n_c_e_s  _a_n_d _A_s_s_o_c_i_a_t_e_d _A_c_t_i_o_n_s, _C_h_a_p_t_e_r _8, _E_n_v_i_r_o_n_m_e_n_t _V_a_r_i_a_b_l_e_s, _S_e_c_-
+       _t_i_o_n _9_._3, _B_a_s_i_c _R_e_g_u_l_a_r _E_x_p_r_e_s_s_i_o_n_s, _C_h_a_p_t_e_r _1_1, _G_e_n_e_r_a_l  _T_e_r_m_i_n_a_l  _I_n_-
+       _t_e_r_f_a_c_e, _S_e_c_t_i_o_n _1_2_._2, _U_t_i_l_i_t_y _S_y_n_t_a_x _G_u_i_d_e_l_i_n_e_s
+
+CCOOPPYYRRIIGGHHTT
+       Portions  of  this text are reprinted and reproduced in electronic form
+       from IEEE Std 1003.1, 2013 Edition, Standard for Information Technology
+       --  Portable  Operating  System  Interface (POSIX), The Open Group Base
+       Specifications Issue 7, Copyright (C) 2013 by the Institute of Electri-
+       cal  and  Electronics  Engineers,  Inc  and  The  Open Group.  (This is
+       POSIX.1-2008 with the 2013 Technical Corrigendum  1  applied.)  In  the
+       event of any discrepancy between this version and the original IEEE and
+       The Open Group Standard, the original IEEE and The Open Group  Standard
+       is  the  referee document. The original Standard can be obtained online
+       at http://www.unix.org/online.html .
+
+       Any typographical or formatting errors that appear  in  this  page  are
+       most likely to have been introduced during the conversion of the source
+       files to man page format. To report such errors,  see  https://www.ker-
+       nel.org/doc/man-pages/reporting_bugs.html .
+
+
+
+IEEE/The Open Group                  2013                               ED(1P)
