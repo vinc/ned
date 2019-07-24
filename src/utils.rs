@@ -15,9 +15,9 @@ pub fn print_error(error: Error, show_help: bool) {
     };
 
     if show_help {
-        println!("{}", format!("? {}", msg).color(COLOR_ERRORS));
+        println!("{}", format!("? {}", msg).bold().color(COLOR_ERRORS));
     } else {
-        println!("{}", "?".color(COLOR_ERRORS));
+        println!("{}", "?".bold().color(COLOR_ERRORS));
     }
 }
 
