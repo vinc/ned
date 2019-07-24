@@ -16,7 +16,7 @@ pub trait Commands {
     fn global_command(&mut self, addr_1: usize, addr_2: usize, params: Vec<&str>) -> Result<State, Error>;
     fn substitute_command(&mut self, addr_1: usize, addr_2: usize, params: Vec<&str>) -> Result<State, Error>;
     fn quit_command(&self, flag: bool) -> Result<State, Error>;
-    fn quit_without_checking_command(&self) -> Result<State, Error>;
+    fn write_and_quit_command(&mut self, params: Vec<&str>) -> Result<State, Error>;
     fn invalid_command(&self) -> Result<State, Error>;
 }
 
@@ -159,8 +159,11 @@ impl Commands for Editor {
         }
     }
 
-    fn quit_without_checking_command(&self) -> Result<State, Error> {
-        Ok(State::Stopped)
+    fn write_and_quit_command(&mut self, params: Vec<&str>) -> Result<State, Error> {
+        match self.write_command(params) {
+            Ok(_) => Ok(State::Stopped),
+            Err(error) => Err(error)
+        }
     }
 
     fn invalid_command(&self) -> Result<State, Error> {

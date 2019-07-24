@@ -12,12 +12,14 @@ use regex::Regex;
 use rustyline::error::ReadlineError;
 use std::env;
 
+static PROMPT: &str = "> ";
+
 fn main() {
     let home = std::env::var("HOME").unwrap();
     let history = format!("{}/.ned_history", home);
 
     let mut ed = Editor::new();
-    let mut prompt = "> ";
+    let mut prompt = PROMPT;
     let args: Vec<String> = env::args().filter(|arg| {
         if arg == "--debug" {
             ed.show_debug = true;
@@ -113,7 +115,7 @@ fn main() {
                     "g" => ed.global_command(addr_1, addr_2, params),
                     "s" => ed.substitute_command(addr_1, addr_2, params),
                     "q" => ed.quit_command(flag),
-                    "Q" => ed.quit_without_checking_command(), // TODO: Remove this command?
+                    "x" => ed.write_and_quit_command(params),
                     _   => ed.invalid_command()
                 };
 
