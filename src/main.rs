@@ -42,6 +42,7 @@ fn main() {
         "(?P<addr_sep>[,;%]?)",
         "(?P<addr_2>[0-9]*)",
         "(?P<cmd>[a-zA-Z]*)",
+        "(?P<flag>!?)",
         "(?P<cmd_sep>[ /]?)",
         "(?P<params>.*)"
     )).unwrap();
@@ -81,6 +82,7 @@ fn main() {
                 let caps = re.captures(input).unwrap();
 
                 let cmd = &caps["cmd"];
+                let flag = &caps["flag"] == "!";
                 let cmd_sep = if &caps["cmd_sep"] == "/" { "/" } else { " " };
                 let params: Vec<&str> = caps["params"].split(cmd_sep).collect();
 
@@ -110,8 +112,8 @@ fn main() {
                     "n" => ed.number_command(addr_1, addr_2),
                     "g" => ed.global_command(addr_1, addr_2, params),
                     "s" => ed.substitute_command(addr_1, addr_2, params),
-                    "q" => ed.quit_command(),
-                    "Q" => ed.quit_without_checking_command(),
+                    "q" => ed.quit_command(flag),
+                    "Q" => ed.quit_without_checking_command(), // TODO: Remove this command?
                     _   => ed.invalid_command()
                 };
 

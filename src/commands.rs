@@ -15,7 +15,7 @@ pub trait Commands {
     fn number_command(&mut self, addr_1: usize, addr_2: usize) -> Result<State, Error>;
     fn global_command(&mut self, addr_1: usize, addr_2: usize, params: Vec<&str>) -> Result<State, Error>;
     fn substitute_command(&mut self, addr_1: usize, addr_2: usize, params: Vec<&str>) -> Result<State, Error>;
-    fn quit_command(&self) -> Result<State, Error>;
+    fn quit_command(&self, flag: bool) -> Result<State, Error>;
     fn quit_without_checking_command(&self) -> Result<State, Error>;
     fn invalid_command(&self) -> Result<State, Error>;
 }
@@ -151,8 +151,8 @@ impl Commands for Editor {
         Ok(State::Running)
     }
 
-    fn quit_command(&self) -> Result<State, Error> {
-        if self.dirty {
+    fn quit_command(&self, flag: bool) -> Result<State, Error> {
+        if self.dirty && !flag{
             Err(Error::Dirty)
         } else {
             Ok(State::Stopped)
