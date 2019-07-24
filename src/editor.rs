@@ -9,6 +9,7 @@ pub enum Error {
     InvalidCommand,
     InvalidAddress,
     NoFilename,
+    CannotOpen,
     Dirty
 }
 

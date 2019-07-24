@@ -50,11 +50,22 @@ impl Commands for Editor {
     }
 
     fn edit_command(&mut self, params: Vec<&str>) -> Result<State, Error> {
+        if params[0] == "" {
+            return Err(Error::NoFilename);
+        }
         let filename = params[0];
-        self.lines = read_lines(filename);
-        self.addr = self.lines.len();
         self.filename = Some(filename.to_string());
-        self.dirty = false;
+
+        match read_lines(filename) {
+            Err(error) => {
+                return Err(error);
+            },
+            Ok(lines) => {
+                self.lines = lines;
+                self.addr = self.lines.len();
+                self.dirty = false;
+            }
+        }
         Ok(State::Running)
     }
 
