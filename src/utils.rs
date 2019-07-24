@@ -2,6 +2,9 @@ use crate::editor::Error;
 use colored::Colorize;
 use std::fs;
 
+static COLOR_ERRORS: &str = "red";
+static COLOR_NUMBERS: &str = "yellow";
+
 pub fn print_error(error: Error, show_help: bool) {
     let msg = match error {
         Error::InvalidCommand => "Invalid command",
@@ -12,16 +15,16 @@ pub fn print_error(error: Error, show_help: bool) {
     };
 
     if show_help {
-        println!("{}", format!("? {}", msg).bold().red());
+        println!("{}", format!("? {}", msg).color(COLOR_ERRORS));
     } else {
-        println!("{}", "?".bold().red());
+        println!("{}", "?".color(COLOR_ERRORS));
     }
 }
 
 pub fn print_line(line: &str, i: usize, n: usize, show_number: bool) {
     if show_number {
         let width = n.to_string().len();
-        let number = format!("{:>width$}", i, width = width).green();
+        let number = format!("{:>width$}", i, width = width).color(COLOR_NUMBERS);
         println!("{} {}", number, line);
     } else {
         println!("{}", line);
