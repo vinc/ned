@@ -86,7 +86,7 @@ impl Commands for Editor {
         }
 
         if let Some(f) = self.filename.clone() {
-            let data = self.lines.join("\n");
+            let data = self.lines.join("\n") + "\n";
             fs::write(f, data).expect("Unable to write file");
             self.dirty = false;
             Ok(State::Running)
