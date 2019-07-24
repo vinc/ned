@@ -63,7 +63,7 @@ fn main() {
                 break
             },
             Ok(input) => {
-                let input = input.trim();
+                let input = input.trim_end();
 
                 if ed.insert_mode {
                     if input == "." {
