@@ -99,20 +99,20 @@ fn main() {
                 }
 
                 let res = match cmd {
-                    "a"        => ed.append_command(addr_1),
-                    "i"        => ed.insert_command(addr_1),
-                    "c"        => ed.change_command(addr_1, addr_2),
-                    "d"        => ed.delete_command(addr_1, addr_2),
-                    "e"        => ed.edit_command(params),
-                    "f"        => ed.filename_command(params),
-                    "w" | "wq" => ed.write_command(params),
-                    "p"        => ed.print_command(addr_1, addr_2),
-                    "n" | "pn" => ed.number_command(addr_1, addr_2),
-                    "g"        => ed.global_command(addr_1, addr_2, params),
-                    "s"        => ed.substitute_command(addr_1, addr_2, params),
-                    "q"        => ed.quit_command(),
-                    "Q"        => ed.quit_without_checking_command(),
-                    _          => ed.invalid_command()
+                    "a" => ed.append_command(addr_1),
+                    "i" => ed.insert_command(addr_1),
+                    "c" => ed.change_command(addr_1, addr_2),
+                    "d" => ed.delete_command(addr_1, addr_2),
+                    "e" => ed.edit_command(params),
+                    "f" => ed.filename_command(params),
+                    "w" => ed.write_command(params),
+                    "p" => ed.print_command(addr_1, addr_2),
+                    "n" => ed.number_command(addr_1, addr_2),
+                    "g" => ed.global_command(addr_1, addr_2, params),
+                    "s" => ed.substitute_command(addr_1, addr_2, params),
+                    "q" => ed.quit_command(),
+                    "Q" => ed.quit_without_checking_command(),
+                    _   => ed.invalid_command()
                 };
 
                 match res {
