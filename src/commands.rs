@@ -38,13 +38,12 @@ impl Commands for Editor {
 
     fn change_command(&mut self, addr_1: usize, addr_2: usize) -> Result<State, Error> {
         self.delete_command(addr_1, addr_2).ok();
-        self.insert_mode = true;
-        Ok(State::Running)
+        self.insert_command(addr_1)
     }
 
     fn delete_command(&mut self, addr_1: usize, addr_2: usize) -> Result<State, Error> {
         self.lines.drain(addr_1 - 1 .. addr_2);
-        self.addr = addr_1 - 1;
+        self.addr = addr_1;
         self.dirty = true;
         Ok(State::Running)
     }

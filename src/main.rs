@@ -103,9 +103,10 @@ fn main() {
                 }
 
                 let res = match cmd {
-                    "a" => ed.append_command(addr_1),
-                    "i" => ed.insert_command(addr_1),
-                    "c" => ed.change_command(addr_1, addr_2),
+                    "a" => ed.append_command(addr_1), // insert [a]fter
+                    "b" => ed.insert_command(addr_1), // insert [b]efore
+                    "i" => ed.insert_command(addr_1), // [i]nsert before
+                    "c" => ed.change_command(addr_1, addr_2), // [d] + [i]
                     "d" => ed.delete_command(addr_1, addr_2),
                     "e" => ed.edit_command(params),
                     "f" => ed.filename_command(params),
@@ -115,7 +116,7 @@ fn main() {
                     "g" => ed.global_command(addr_1, addr_2, params),
                     "s" => ed.substitute_command(addr_1, addr_2, params),
                     "q" => ed.quit_command(flag),
-                    "x" => ed.write_and_quit_command(params),
+                    "x" => ed.write_and_quit_command(params), // [w] + [q]
                     _   => ed.invalid_command()
                 };
 
