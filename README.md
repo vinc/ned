@@ -39,7 +39,8 @@ EXAMPLE
     > 2d
     > ,p
     Ned is the new standard text editor.
-    > wq
+    > w
+    > q
 
 
 SEE ALSO

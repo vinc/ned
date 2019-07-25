@@ -10,4 +10,5 @@ Ned is the new standard text editor.
 .
 2d
 ,p
-wq
+w
+q
