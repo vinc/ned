@@ -7,25 +7,15 @@ pub trait Addresses {
 
 impl Addresses for Editor {
     fn parse_addresses(&self, addr_1_str: &str, addr_sep_str: &str, addr_2_str: &str) -> (usize, usize) {
-        let mut addr_1 = match addr_sep_str {
-            "," | "%" => 1,
-            _         => self.addr
-        };
-
-        addr_1 = match addr_1_str {
-            ""  => addr_1,
+        let addr_1 = match addr_1_str {
+            ""  => if addr_sep_str == "" { self.addr } else { 1 }
             "." => self.addr,
             "$" => self.lines.len(),
             _   => addr_1_str.parse::<usize>().unwrap()
         };
 
-        let mut addr_2 = match addr_sep_str {
-            "," | "%" => self.lines.len(),
-            _         => addr_1
-        };
-
-        addr_2 = match addr_2_str {
-            ""  => addr_2,
+        let addr_2 = match addr_2_str {
+            ""  => if addr_sep_str == "" { addr_1 } else { self.lines.len() }
             "." => self.addr,
             "$" => self.lines.len(),
             _   => addr_2_str.parse::<usize>().unwrap()
@@ -41,5 +31,24 @@ impl Addresses for Editor {
             }
         }
         true
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::commands::*;
+
+    static TEST_FILE: &str = "LICENSE";
+    static TEST_FILE_LENGTH: usize = 21;
+
+    #[test]
+    fn test_parse_addresses() {
+        let mut ed = Editor::new();
+        ed.edit_command(vec![TEST_FILE]).ok();
+
+        assert_eq!(ed.addr, TEST_FILE_LENGTH);
+        assert_eq!(ed.parse_addresses("", "%", ""), (1, TEST_FILE_LENGTH));
+        assert_eq!(ed.parse_addresses("2", "", ""), (2, 2));
     }
 }
