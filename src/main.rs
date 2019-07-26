@@ -8,7 +8,6 @@ use crate::addresses::*;
 use crate::commands::*;
 use crate::utils::*;
 
-use regex::Regex;
 use rustyline::error::ReadlineError;
 use std::env;
 
@@ -33,21 +32,17 @@ fn main() {
 
     if args.len() == 2 {
         let filename = args[1].clone();
-        let params: Vec<&str> = vec![&filename];
-        if let Err(e) = ed.edit_command(params) {
+        let cl = CommandLine {
+            addr_1: None,
+            addr_2: None,
+            cmd: "e".to_string(),
+            flag: false,
+            params: vec![filename]
+        };
+        if let Err(e) = ed.edit_command(cl) {
             print_error(e, ed.show_help);
         }
     }
-
-    let re = Regex::new(concat!(
-        "(?P<addr_1>[0-9]*)",
-        "(?P<addr_sep>[,;%]?)",
-        "(?P<addr_2>[0-9]*)",
-        "(?P<cmd>[a-zA-Z]*)",
-        "(?P<flag>!?)",
-        "(?P<cmd_sep>[ /]?)",
-        "(?P<params>.*)"
-    )).unwrap();
 
     let mut rl = rustyline::Editor::<()>::new();
     rl.load_history(&history).ok();
@@ -81,42 +76,41 @@ fn main() {
                     rl.add_history_entry(input);
                 }
 
-                let caps = re.captures(input).unwrap();
+                let mut cl = ed.parse_command_line(input);
 
-                let cmd = &caps["cmd"];
-                let flag = &caps["flag"] == "!";
-                let cmd_sep = if &caps["cmd_sep"] == "/" { "/" } else { " " };
-                let params: Vec<&str> = caps["params"].split(cmd_sep).collect();
-
-                let (addr_1, addr_2) = ed.parse_addresses(&caps["addr_1"], &caps["addr_sep"], &caps["addr_2"]);
-
-                if !ed.is_range_ok(addr_1, addr_2, cmd) {
+                if !ed.is_range_ok(cl.clone()) {
                     print_error(Error::InvalidAddress, ed.show_help);
                     continue;
                 }
-
-                if ed.show_debug {
-                    println!("# range: [{},{}]", addr_1, addr_2);
-                    println!("# addr: {}", ed.addr);
-                    println!("# cmd: {}", cmd);
-                    println!("# params: {:?}", params);
+                if cl.addr_1.is_none() {
+                    cl.addr_1 = Some(ed.addr);
+                }
+                if cl.addr_2.is_none() {
+                    cl.addr_2 = cl.addr_1;
                 }
 
-                let res = match cmd {
-                    "a" => ed.append_command(addr_1), // insert [a]fter
-                    "b" => ed.insert_command(addr_1), // insert [b]efore
-                    "i" => ed.insert_command(addr_1), // [i]nsert before
-                    "c" => ed.change_command(addr_1, addr_2), // [d] + [i]
-                    "d" => ed.delete_command(addr_1, addr_2),
-                    "e" => ed.edit_command(params),
-                    "f" => ed.filename_command(params),
-                    "w" => ed.write_command(params),
-                    "p" => ed.print_command(addr_1, addr_2),
-                    "n" => ed.number_command(addr_1, addr_2),
-                    "g" => ed.global_command(addr_1, addr_2, params),
-                    "s" => ed.substitute_command(addr_1, addr_2, params),
-                    "q" => ed.quit_command(flag),
-                    "x" => ed.write_and_quit_command(params), // [w] + [q]
+                if ed.show_debug {
+                    println!("# range: [{:?},{:?}]", cl.addr_1, cl.addr_2);
+                    println!("# addr: {}", ed.addr);
+                    println!("# cmd: {}", cl.cmd);
+                    println!("# params: {:?}", cl.params);
+                }
+
+                let res = match cl.cmd.as_str() {
+                    "a" => ed.append_command(cl), // insert [a]fter
+                    "b" => ed.insert_command(cl), // insert [b]efore
+                    "i" => ed.insert_command(cl), // [i]nsert before
+                    "c" => ed.change_command(cl), // [d] + [i]
+                    "d" => ed.delete_command(cl),
+                    "e" => ed.edit_command(cl),
+                    "f" => ed.filename_command(cl),
+                    "w" => ed.write_command(cl),
+                    "p" => ed.print_command(cl),
+                    "n" => ed.number_command(cl),
+                    "g" => ed.global_command(cl),
+                    "s" => ed.substitute_command(cl),
+                    "q" => ed.quit_command(cl),
+                    "x" => ed.write_and_quit_command(cl), // [w] + [q]
                     _   => ed.invalid_command()
                 };
 

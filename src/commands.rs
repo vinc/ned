@@ -4,31 +4,31 @@ use std::fs;
 use regex::Regex;
 
 pub trait Commands {
-    fn append_command(&mut self, addr_1: usize) -> Result<State, Error>;
-    fn insert_command(&mut self, addr_1: usize) -> Result<State, Error>;
-    fn change_command(&mut self, addr_1: usize, addr_2: usize) -> Result<State, Error>;
-    fn delete_command(&mut self, addr_1: usize, addr_2: usize) -> Result<State, Error>;
-    fn edit_command(&mut self, params: Vec<&str>) -> Result<State, Error>;
-    fn filename_command(&mut self, params: Vec<&str>) -> Result<State, Error>;
-    fn write_command(&mut self, params: Vec<&str>) -> Result<State, Error>;
-    fn print_command(&mut self, addr_1: usize, addr_2: usize) -> Result<State, Error>;
-    fn number_command(&mut self, addr_1: usize, addr_2: usize) -> Result<State, Error>;
-    fn global_command(&mut self, addr_1: usize, addr_2: usize, params: Vec<&str>) -> Result<State, Error>;
-    fn substitute_command(&mut self, addr_1: usize, addr_2: usize, params: Vec<&str>) -> Result<State, Error>;
-    fn quit_command(&self, flag: bool) -> Result<State, Error>;
-    fn write_and_quit_command(&mut self, params: Vec<&str>) -> Result<State, Error>;
+    fn append_command(&mut self, cl: CommandLine) -> Result<State, Error>;
+    fn insert_command(&mut self, cl: CommandLine) -> Result<State, Error>;
+    fn change_command(&mut self, cl: CommandLine) -> Result<State, Error>;
+    fn delete_command(&mut self, cl: CommandLine) -> Result<State, Error>;
+    fn edit_command(&mut self, cl: CommandLine) -> Result<State, Error>;
+    fn filename_command(&mut self, cl: CommandLine) -> Result<State, Error>;
+    fn write_command(&mut self, cl: CommandLine) -> Result<State, Error>;
+    fn print_command(&mut self, cl: CommandLine) -> Result<State, Error>;
+    fn number_command(&mut self, cl: CommandLine) -> Result<State, Error>;
+    fn global_command(&mut self, cl: CommandLine) -> Result<State, Error>;
+    fn substitute_command(&mut self, cl: CommandLine) -> Result<State, Error>;
+    fn quit_command(&self, cl: CommandLine) -> Result<State, Error>;
+    fn write_and_quit_command(&mut self, cl: CommandLine) -> Result<State, Error>;
     fn invalid_command(&self) -> Result<State, Error>;
 }
 
 impl Commands for Editor {
-    fn append_command(&mut self, addr_1: usize) -> Result<State, Error> {
-        self.addr = addr_1;
+    fn append_command(&mut self, cl: CommandLine) -> Result<State, Error> {
+        self.addr = cl.addr_1.unwrap();
         self.insert_mode = true;
         Ok(State::Running)
     }
 
-    fn insert_command(&mut self, addr_1: usize) -> Result<State, Error> {
-        self.addr = addr_1;
+    fn insert_command(&mut self, cl: CommandLine) -> Result<State, Error> {
+        self.addr = cl.addr_1.unwrap();
         self.insert_mode = true;
         if self.addr > 0 {
             self.addr -= 1;
@@ -36,26 +36,26 @@ impl Commands for Editor {
         Ok(State::Running)
     }
 
-    fn change_command(&mut self, addr_1: usize, addr_2: usize) -> Result<State, Error> {
-        self.delete_command(addr_1, addr_2).ok();
-        self.insert_command(addr_1)
+    fn change_command(&mut self, cl: CommandLine) -> Result<State, Error> {
+        self.delete_command(cl.clone()).ok();
+        self.insert_command(cl.clone())
     }
 
-    fn delete_command(&mut self, addr_1: usize, addr_2: usize) -> Result<State, Error> {
-        self.lines.drain(addr_1 - 1 .. addr_2);
-        self.addr = addr_1;
+    fn delete_command(&mut self, cl: CommandLine) -> Result<State, Error> {
+        self.lines.drain(cl.addr_1.unwrap() - 1 .. cl.addr_2.unwrap());
+        self.addr = cl.addr_1.unwrap();
         self.dirty = true;
         Ok(State::Running)
     }
 
-    fn edit_command(&mut self, params: Vec<&str>) -> Result<State, Error> {
-        if params[0] == "" {
+    fn edit_command(&mut self, cl: CommandLine) -> Result<State, Error> {
+        if cl.params.len() == 0 {
             return Err(Error::NoFilename);
         }
-        let filename = params[0];
-        self.filename = Some(filename.to_string());
+        let filename = cl.params[0].clone();
+        self.filename = Some(filename.clone());
 
-        match read_lines(filename) {
+        match read_lines(&filename) {
             Err(error) => {
                 return Err(error);
             },
@@ -68,9 +68,9 @@ impl Commands for Editor {
         Ok(State::Running)
     }
 
-    fn filename_command(&mut self, params: Vec<&str>) -> Result<State, Error> {
-        if params[0] != "" {
-            self.filename = Some(params[0].to_string());
+    fn filename_command(&mut self, cl: CommandLine) -> Result<State, Error> {
+        if cl.params.len() == 1 {
+            self.filename = Some(cl.params[0].clone());
         } else if let Some(f) = self.filename.clone() {
             println!("{}", f);
         } else {
@@ -79,9 +79,9 @@ impl Commands for Editor {
         Ok(State::Running)
     }
 
-    fn write_command(&mut self, params: Vec<&str>) -> Result<State, Error> {
-        if params[0] != "" {
-            self.filename = Some(params[0].to_string());
+    fn write_command(&mut self, cl: CommandLine) -> Result<State, Error> {
+        if cl.params.len() == 1 {
+            self.filename = Some(cl.params[0].clone());
         }
 
         if let Some(f) = self.filename.clone() {
@@ -94,30 +94,30 @@ impl Commands for Editor {
         }
     }
 
-    fn print_command(&mut self, addr_1: usize, addr_2: usize) -> Result<State, Error> {
+    fn print_command(&mut self, cl: CommandLine) -> Result<State, Error> {
         let n = self.lines.len();
-        for i in addr_1 .. addr_2 + 1 {
+        for i in cl.addr_1.unwrap() .. cl.addr_2.unwrap() + 1 {
             print_line(&self.lines[i - 1], i, n, false);
             self.addr = i;
         }
         Ok(State::Running)
     }
 
-    fn number_command(&mut self, addr_1: usize, addr_2: usize) -> Result<State, Error> {
+    fn number_command(&mut self, cl: CommandLine) -> Result<State, Error> {
         let n = self.lines.len();
-        for i in addr_1 .. addr_2 + 1 {
+        for i in cl.addr_1.unwrap() .. cl.addr_2.unwrap() + 1 {
             print_line(&self.lines[i - 1], i, n, true);
             self.addr = i;
         }
         Ok(State::Running)
     }
 
-    fn global_command(&mut self, addr_1: usize, addr_2: usize, params: Vec<&str>) -> Result<State, Error> {
-        let re = Regex::new(params[0]).unwrap();
-        let cmd_list = if params.len() == 2 { params[1] } else { "p" };
+    fn global_command(&mut self, cl: CommandLine) -> Result<State, Error> {
+        let re = Regex::new(&cl.params[0]).unwrap();
+        let cmd_list = if cl.params.len() == 2 { &cl.params[1] } else { "p" };
         let show_number = cmd_list.ends_with("n");
-        let mut i = addr_1;
-        let mut n = addr_2;
+        let mut i = cl.addr_1.unwrap();
+        let mut n = cl.addr_2.unwrap();
         while i <= n {
             if re.is_match(&self.lines[i - 1]) {
                 match cmd_list {
@@ -138,11 +138,11 @@ impl Commands for Editor {
         Ok(State::Running)
     }
 
-    fn substitute_command(&mut self, addr_1: usize, addr_2: usize, params: Vec<&str>) -> Result<State, Error> {
-        let re = Regex::new(params[0]).unwrap();
-        for i in addr_1 .. addr_2 + 1 {
+    fn substitute_command(&mut self, cl: CommandLine) -> Result<State, Error> {
+        let re = Regex::new(&cl.params[0]).unwrap();
+        for i in cl.addr_1.unwrap() .. cl.addr_2.unwrap() + 1 {
             if re.is_match(&self.lines[i - 1]) {
-                self.lines[i - 1] = re.replace_all(&self.lines[i - 1], params[1]).to_string();
+                self.lines[i - 1] = re.replace_all(&self.lines[i - 1], cl.params[1].as_str()).to_string();
                 self.addr = i;
                 self.dirty = true;
             }
@@ -150,16 +150,16 @@ impl Commands for Editor {
         Ok(State::Running)
     }
 
-    fn quit_command(&self, flag: bool) -> Result<State, Error> {
-        if self.dirty && !flag{
+    fn quit_command(&self, cl: CommandLine) -> Result<State, Error> {
+        if self.dirty && !cl.flag{
             Err(Error::Dirty)
         } else {
             Ok(State::Stopped)
         }
     }
 
-    fn write_and_quit_command(&mut self, params: Vec<&str>) -> Result<State, Error> {
-        match self.write_command(params) {
+    fn write_and_quit_command(&mut self, cl: CommandLine) -> Result<State, Error> {
+        match self.write_command(cl) {
             Ok(_) => Ok(State::Stopped),
             Err(error) => Err(error)
         }
@@ -186,18 +186,30 @@ mod tests {
     #[test]
     fn test_append_command() {
         let mut ed = Editor::new();
-        ed.edit_command(vec![TEST_FILE]).ok();
+        let mut cl = CommandLine {
+            addr_1: None,
+            addr_2: None,
+            cmd: "e".to_string(),
+            flag: false,
+            params: vec![TEST_FILE.to_string()]
+        };
+        ed.edit_command(cl.clone()).ok();
 
+        /*
         assert_eq!(ed.is_range_ok(0, 0, "a"), true);
         assert_eq!(ed.is_range_ok(1, 1, "a"), true);
         assert_eq!(ed.is_range_ok(TEST_FILE_LENGTH, TEST_FILE_LENGTH, "a"), true);
         assert_eq!(ed.is_range_ok(TEST_FILE_LENGTH + 1, TEST_FILE_LENGTH + 1,"a"), false);
+        */
 
-        assert_eq!(ed.append_command(0), Ok(State::Running));
+        cl.cmd = "a".to_string();
+        cl.addr_1 = Some(0);
+        assert_eq!(ed.append_command(cl.clone()), Ok(State::Running));
         assert_eq!(ed.addr, 0);
         assert_eq!(ed.insert_mode, true);
 
-        assert_eq!(ed.append_command(1), Ok(State::Running));
+        cl.addr_1 = Some(1);
+        assert_eq!(ed.append_command(cl.clone()), Ok(State::Running));
         assert_eq!(ed.addr, 1);
         assert_eq!(ed.insert_mode, true);
     }
