@@ -1,8 +1,10 @@
 use crate::addresses::*;
 use regex::Regex;
 
-static RE_ADDRS: &str = r"^(?P<addr1>/(?:[^\\/]|\\.)*/|[.$]|[-+]?[0-9]*)(?P<sep>[,;%]?)(?P<addr2>/(?:[^\\/]|\\.)*/|[.$]|[-+]?[0-9]*)";
-static RE_CMD: &str = r"^(?P<cmd>[a-z]*)(?P<flag>!?)(?:/(?P<re1>(?:[^\\/]|\\.)*)/(?P<re2>(?:[^\\/]|\\.)*)?| (?P<params>.*))?";
+static RE_ADDRS: &str =
+    r"^(?P<addr1>/(?:[^\\/]|\\.)*/|[.$]|[-+]?[0-9]*)(?P<sep>[,;%]?)(?P<addr2>/(?:[^\\/]|\\.)*/|[.$]|[-+]?[0-9]*)";
+static RE_CMD: &str =
+    r"^(?P<cmd>[a-z]*)(?P<flag>!?)(?:/(?P<re1>(?:[^\\/]|\\.)*)/(?P<re2>(?:[^\\/]|\\.)*)?)?(?:[ /](?P<params>.*))?";
 
 #[derive(Debug, PartialEq)]
 pub enum State {
@@ -65,15 +67,17 @@ impl Editor {
         let cmd = caps["cmd"].to_string();
         let flag = &caps["flag"] == "!";
 
-        let mut params: Vec<String> = match caps.name("params") {
-            None => vec![],
-            Some(m) => m.as_str().split_whitespace().map(|s| s.to_string()).collect()
-        };
+        let mut params = vec![];
         if let Some(m) = caps.name("re1") {
             params.push(m.as_str().to_string());
         }
         if let Some(m) = caps.name("re2") {
             params.push(m.as_str().to_string());
+        }
+        if let Some(m) = caps.name("params") {
+            for param in m.as_str().split_whitespace() {
+                params.push(param.to_string());
+            }
         }
 
         CommandLine { addr_1, addr_2, cmd, flag, params }

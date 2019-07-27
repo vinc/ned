@@ -140,9 +140,20 @@ impl Commands for Editor {
 
     fn substitute_command(&mut self, cl: CommandLine) -> Result<State, Error> {
         let re = Regex::new(&cl.params[0]).unwrap();
+        let limit = if cl.params.len() == 3 {
+            if &cl.params[2] == "g" {
+                0
+            } else {
+                cl.params[2].parse::<usize>().unwrap()
+            }
+        } else {
+            1
+        };
         for i in cl.addr_1.unwrap() .. cl.addr_2.unwrap() + 1 {
             if re.is_match(&self.lines[i - 1]) {
-                self.lines[i - 1] = re.replace_all(&self.lines[i - 1], cl.params[1].as_str()).to_string();
+                // NOTE: This will replace at most <limit> matches, whereas ed
+                // would replace the <limit> nth match.
+                self.lines[i - 1] = re.replacen(&self.lines[i - 1], limit, cl.params[1].as_str()).to_string();
                 self.addr = i;
                 self.dirty = true;
             }
