@@ -1,7 +1,7 @@
 use crate::addresses::*;
 use regex::Regex;
 
-static RE_ADDRS: &str = r"^(?P<addr1>/(?:[^\\/]|\\.)*/|[.$0-9]*)(?P<sep>[,;%]?)(?P<addr2>/(?:[^\\/]|\\.)*/|[.$0-9]*)";
+static RE_ADDRS: &str = r"^(?P<addr1>/(?:[^\\/]|\\.)*/|[.$]|[-+]?[0-9]*)(?P<sep>[,;%]?)(?P<addr2>/(?:[^\\/]|\\.)*/|[.$]|[-+]?[0-9]*)";
 static RE_CMD: &str = r"^(?P<cmd>[a-z]*)(?P<flag>!?)(?:/(?P<re1>(?:[^\\/]|\\.)*)/(?P<re2>(?:[^\\/]|\\.)*)?| (?P<params>.*))?";
 
 #[derive(Debug, PartialEq)]

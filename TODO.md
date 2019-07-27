@@ -9,8 +9,8 @@ Addresses
 - [ ] Marked line
 - [x] Forward search
 - [ ] Backward search
-- [ ] Positive offset
-- [ ] Negative offset
+- [+] Positive offset
+- [+] Negative offset
 
 Commands
 --------

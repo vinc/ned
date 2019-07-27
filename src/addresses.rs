@@ -11,15 +11,13 @@ pub trait Addresses {
 
 impl Addresses for Editor {
     fn parse_addr(&self, addr: &str) -> Option<usize> {
-        if addr == "." {
-            Some(self.addr)
-        } else if addr == "$" {
-            Some(self.lines.len())
-        } else if addr.starts_with("/") {
-            let pattern = &addr[1..addr.len() - 1];
-            self.search_forward_regex(&pattern)
-        } else {
-            Some(addr.parse::<usize>().unwrap())
+        match &addr[0..1] {
+            "." => Some(self.addr),
+            "$" => Some(self.lines.len()),
+            "/" => self.search_forward_regex(&addr[1..addr.len() - 1]),
+            "+" => Some(self.addr + addr[1..].parse::<usize>().unwrap()),
+            "-" => Some(self.addr - addr[1..].parse::<usize>().unwrap()),
+            _   => Some(addr.parse::<usize>().unwrap()),
         }
     }
 
@@ -93,6 +91,8 @@ mod tests {
         assert_eq!(ed.parse_addr("2"), Some(2));
         assert_eq!(ed.parse_addr("."), Some(10));
         assert_eq!(ed.parse_addr("$"), Some(TEST_FILE_LENGTH));
+        assert_eq!(ed.parse_addr("+2"), Some(12));
+        assert_eq!(ed.parse_addr("-2"), Some(8));
         assert_eq!(ed.parse_addr("/free/"), Some(5));
     }
 }
