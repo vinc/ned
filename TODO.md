@@ -7,7 +7,7 @@ Addresses
 - [x] Current line
 - [x] Last line
 - [ ] Marked line
-- [ ] Forward search
+- [x] Forward search
 - [ ] Backward search
 - [ ] Positive offset
 - [ ] Negative offset
