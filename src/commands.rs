@@ -121,7 +121,7 @@ impl Commands for Editor {
         while i <= n {
             if re.is_match(&self.lines[i - 1]) {
                 match cmd_list {
-                    "p" | "pn" => {
+                    "p" | "n" | "pn" => {
                         print_line(&self.lines[i - 1], i, self.lines.len(), show_number);
                     },
                     "d" => {
