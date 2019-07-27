@@ -35,7 +35,7 @@ Commands
 - [ ] Prompt Command
 - [x] Quit Command
 - [x] Quit Without Checking Command
-- [ ] Read Command
+- [x] Read Command
 - [x] Substitute Command
 - [ ] Copy Command
 - [ ] Undo Command

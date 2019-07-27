@@ -1,6 +1,7 @@
 use crate::utils::*;
 use crate::editor::*;
 use std::fs;
+use std::process;
 use regex::Regex;
 
 pub trait Commands {
@@ -11,6 +12,7 @@ pub trait Commands {
     fn edit_command(&mut self, cl: CommandLine) -> Result<State, Error>;
     fn filename_command(&mut self, cl: CommandLine) -> Result<State, Error>;
     fn write_command(&mut self, cl: CommandLine) -> Result<State, Error>;
+    fn read_command(&mut self, cl: CommandLine) -> Result<State, Error>;
     fn print_command(&mut self, cl: CommandLine) -> Result<State, Error>;
     fn number_command(&mut self, cl: CommandLine) -> Result<State, Error>;
     fn global_command(&mut self, cl: CommandLine) -> Result<State, Error>;
@@ -91,6 +93,38 @@ impl Commands for Editor {
             Ok(State::Running)
         } else {
             return Err(Error::NoFilename);
+        }
+    }
+
+    fn read_command(&mut self, cl: CommandLine) -> Result<State, Error> {
+        if cl.params.len() == 0 {
+            return Err(Error::NoFilename);
+        }
+        if cl.flag {
+            let mut args = cl.params.clone();
+            let mut shell = process::Command::new(&args.pop().unwrap());
+            for arg in args {
+                shell.arg(arg);
+            }
+            let output = shell.output().expect("Could not execute shell command line");
+            for line in String::from_utf8_lossy(&output.stdout).lines() {
+                self.lines.push(line.to_string());
+                self.addr += 1;
+                self.dirty = true;
+            }
+            Ok(State::Running)
+        } else {
+            match read_lines(&cl.params[0]) {
+                Err(error) => {
+                    return Err(error);
+                },
+                Ok(lines) => {
+                    self.lines.append(&mut lines.clone());
+                    self.addr = self.lines.len();
+                    self.dirty = true;
+                }
+            }
+            Ok(State::Running)
         }
     }
 

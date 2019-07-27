@@ -105,6 +105,7 @@ fn main() {
                     "e" => ed.edit_command(cl),
                     "f" => ed.filename_command(cl),
                     "w" => ed.write_command(cl),
+                    "r" => ed.read_command(cl),
                     "p" => ed.print_command(cl),
                     "n" => ed.number_command(cl),
                     "g" => ed.global_command(cl),
