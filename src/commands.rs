@@ -101,12 +101,9 @@ impl Commands for Editor {
             return Err(Error::NoFilename);
         }
         if cl.flag {
-            let mut args = cl.params.clone();
-            let mut shell = process::Command::new(&args.pop().unwrap());
-            for arg in args {
-                shell.arg(arg);
-            }
-            let output = shell.output().expect("Could not execute shell command line");
+            let output = process::Command::new("sh").
+                arg("-c").arg(cl.params.join(" ")).
+                output().expect("Could not execute shell command line");
             for line in String::from_utf8_lossy(&output.stdout).lines() {
                 self.lines.push(line.to_string());
                 self.addr += 1;
