@@ -4,7 +4,34 @@ use std::fs;
 use std::process;
 use regex::Regex;
 
+#[derive(Clone)]
+pub struct CommandLine {
+    pub addr_1: Option<usize>,
+    pub addr_2: Option<usize>,
+    pub cmd: String,
+    pub flag: bool,
+    pub params: Vec<String>
+}
+
+impl CommandLine {
+    pub fn is_edit(&self) -> bool {
+        self.cmd.as_str() == "e"
+    }
+
+    pub fn is_undo(&self) -> bool {
+        self.cmd.as_str() == "u"
+    }
+
+    pub fn is_undoable(&self) -> bool {
+        match self.cmd.as_str() {
+            "a" | "b" | "i" | "c" | "d" | "f" | "r" | "s" => true,
+            _ => false
+        }
+    }
+}
+
 pub trait Commands {
+    fn exec(&mut self, cl: CommandLine) -> Result<State, Error>;
     fn append_command(&mut self, cl: CommandLine) -> Result<State, Error>;
     fn insert_command(&mut self, cl: CommandLine) -> Result<State, Error>;
     fn change_command(&mut self, cl: CommandLine) -> Result<State, Error>;
@@ -23,6 +50,27 @@ pub trait Commands {
 }
 
 impl Commands for Editor {
+    fn exec(&mut self, cl: CommandLine) -> Result<State, Error> {
+        match cl.cmd.as_str() {
+            "a" => self.append_command(cl), // insert [a]fter
+            "b" => self.insert_command(cl), // insert [b]efore
+            "i" => self.insert_command(cl), // [i]nsert before
+            "c" => self.change_command(cl), // [d] + [i]
+            "d" => self.delete_command(cl),
+            "e" => self.edit_command(cl),
+            "f" => self.filename_command(cl),
+            "w" => self.write_command(cl),
+            "r" => self.read_command(cl),
+            "p" => self.print_command(cl),
+            "n" => self.number_command(cl),
+            "g" => self.global_command(cl),
+            "s" => self.substitute_command(cl),
+            "q" => self.quit_command(cl),
+            "x" => self.write_and_quit_command(cl), // [w] + [q]
+            _   => self.invalid_command()
+        }
+    }
+
     fn append_command(&mut self, cl: CommandLine) -> Result<State, Error> {
         self.addr = cl.addr_1.unwrap();
         self.insert_mode = true;

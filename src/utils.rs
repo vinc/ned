@@ -10,6 +10,7 @@ pub fn print_error(error: Error, show_help: bool) {
         Error::InvalidCommand => "Invalid command",
         Error::InvalidAddress => "Invalid address",
         Error::NoFilename => "No file name",
+        Error::NoUndo => "Nothing to undo",
         Error::CannotOpen => "Cannot open input file",
         Error::Dirty => "No write since last change"
     };

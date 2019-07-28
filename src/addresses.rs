@@ -1,4 +1,5 @@
 use crate::editor::*;
+use crate::commands::*;
 use regex::Regex;
 
 pub trait Addresses {

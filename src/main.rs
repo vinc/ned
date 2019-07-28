@@ -18,6 +18,7 @@ fn main() {
     let history = format!("{}/.ned_history", home);
 
     let mut ed = Editor::new();
+    let mut undo = vec![];
     let mut prompt = PROMPT;
     let args: Vec<String> = env::args().filter(|arg| {
         if arg == "--debug" {
@@ -72,8 +73,6 @@ fn main() {
                         ed.dirty = true;
                     }
                     continue;
-                } else {
-                    rl.add_history_entry(input);
                 }
 
                 let mut cl = ed.parse_command_line(input);
@@ -96,29 +95,37 @@ fn main() {
                     println!("# params: {:?}", cl.params);
                 }
 
-                let res = match cl.cmd.as_str() {
-                    "a" => ed.append_command(cl), // insert [a]fter
-                    "b" => ed.insert_command(cl), // insert [b]efore
-                    "i" => ed.insert_command(cl), // [i]nsert before
-                    "c" => ed.change_command(cl), // [d] + [i]
-                    "d" => ed.delete_command(cl),
-                    "e" => ed.edit_command(cl),
-                    "f" => ed.filename_command(cl),
-                    "w" => ed.write_command(cl),
-                    "r" => ed.read_command(cl),
-                    "p" => ed.print_command(cl),
-                    "n" => ed.number_command(cl),
-                    "g" => ed.global_command(cl),
-                    "s" => ed.substitute_command(cl),
-                    "q" => ed.quit_command(cl),
-                    "x" => ed.write_and_quit_command(cl), // [w] + [q]
-                    _   => ed.invalid_command()
+                if cl.is_undoable() {
+                    undo.push(ed.clone());
+                } else if cl.is_edit() {
+                    undo.clear();
+                }
+
+                let res = if cl.is_undo() {
+                    match undo.pop() {
+                        Some(previous_state) => {
+                            ed = previous_state;
+                            Ok(State::Running)
+                        },
+                        None => {
+                            Err(Error::NoUndo)
+                        }
+                    }
+                } else {
+                    ed.exec(cl)
                 };
 
                 match res {
-                    Ok(State::Running) => { continue },
-                    Ok(State::Stopped) => { break },
-                    Err(error) => { print_error(error, ed.show_help) }
+                    Err(error) => {
+                        print_error(error, ed.show_help)
+                    },
+                    Ok(State::Stopped) => {
+                        rl.add_history_entry(input);
+                        break
+                    }
+                    Ok(State::Running) => {
+                        rl.add_history_entry(input);
+                    },
                 }
             }
         }

@@ -1,4 +1,5 @@
 use crate::addresses::*;
+use crate::commands::*;
 use regex::Regex;
 
 static RE_ADDRS: &str =
@@ -18,9 +19,11 @@ pub enum Error {
     InvalidAddress,
     NoFilename,
     CannotOpen,
+    NoUndo,
     Dirty
 }
 
+#[derive(Clone, Debug)]
 pub struct Editor {
     pub dirty: bool,
     pub show_help: bool,
@@ -29,15 +32,6 @@ pub struct Editor {
     pub addr: usize,
     pub lines: Vec<String>,
     pub filename: Option<String>
-}
-
-#[derive(Clone)]
-pub struct CommandLine {
-    pub addr_1: Option<usize>,
-    pub addr_2: Option<usize>,
-    pub cmd: String,
-    pub flag: bool,
-    pub params: Vec<String>
 }
 
 impl Editor {

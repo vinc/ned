@@ -38,7 +38,7 @@ Commands
 - [x] Read Command
 - [x] Substitute Command
 - [ ] Copy Command
-- [ ] Undo Command
+- [x] Undo Command
 - [ ] Global Non-Matched Command
 - [ ] Interactive Global Not-Matched Command
 - [x] Write Command
