@@ -28,10 +28,15 @@ impl CommandLine {
             _ => false
         }
     }
+    pub fn into_cmd(&self, cmd: &str) -> CommandLine {
+        let mut cl = self.clone();
+        cl.cmd = cmd.to_string();
+        cl
+    }
 }
 
 pub trait Commands {
-    fn exec(&mut self, cl: CommandLine) -> Result<State, Error>;
+    fn command(&mut self, cl: CommandLine) -> Result<State, Error>;
     fn append_command(&mut self, cl: CommandLine) -> Result<State, Error>;
     fn insert_command(&mut self, cl: CommandLine) -> Result<State, Error>;
     fn change_command(&mut self, cl: CommandLine) -> Result<State, Error>;
@@ -50,7 +55,7 @@ pub trait Commands {
 }
 
 impl Commands for Editor {
-    fn exec(&mut self, cl: CommandLine) -> Result<State, Error> {
+    fn command(&mut self, cl: CommandLine) -> Result<State, Error> {
         match cl.cmd.as_str() {
             "a" => self.append_command(cl), // insert [a]fter
             "b" => self.insert_command(cl), // insert [b]efore
@@ -87,8 +92,8 @@ impl Commands for Editor {
     }
 
     fn change_command(&mut self, cl: CommandLine) -> Result<State, Error> {
-        self.delete_command(cl.clone()).ok();
-        self.insert_command(cl.clone())
+        self.delete_command(cl.into_cmd("d")).ok();
+        self.insert_command(cl.into_cmd("i"))
     }
 
     fn delete_command(&mut self, cl: CommandLine) -> Result<State, Error> {
@@ -102,20 +107,24 @@ impl Commands for Editor {
         if cl.params.len() == 0 {
             return Err(Error::NoFilename);
         }
+        self.rm_log();
+        self.rm_tmp();
         let filename = cl.params[0].clone();
-        self.filename = Some(filename.clone());
 
         match read_lines(&filename) {
             Err(error) => {
+                self.mk_tmp();
                 return Err(error);
             },
             Ok(lines) => {
+                self.filename = Some(filename.clone());
                 self.lines = lines;
                 self.addr = self.lines.len();
                 self.dirty = false;
+                self.mk_tmp();
+                Ok(State::Running)
             }
         }
-        Ok(State::Running)
     }
 
     fn filename_command(&mut self, cl: CommandLine) -> Result<State, Error> {
@@ -241,6 +250,8 @@ impl Commands for Editor {
     }
 
     fn quit_command(&self, cl: CommandLine) -> Result<State, Error> {
+        self.rm_tmp();
+        self.rm_log();
         if self.dirty && !cl.flag{
             Err(Error::Dirty)
         } else {
@@ -249,8 +260,8 @@ impl Commands for Editor {
     }
 
     fn write_and_quit_command(&mut self, cl: CommandLine) -> Result<State, Error> {
-        match self.write_command(cl) {
-            Ok(_) => Ok(State::Stopped),
+        match self.write_command(cl.into_cmd("w")) {
+            Ok(_) => self.quit_command(cl.into_cmd("q")),
             Err(error) => Err(error)
         }
     }
