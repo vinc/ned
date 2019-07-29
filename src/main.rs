@@ -32,17 +32,17 @@ fn main() {
     }).collect();
 
     if args.len() == 2 {
-        let filename = args[1].clone();
         let cl = CommandLine {
             addr_1: None,
             addr_2: None,
             cmd: "e".to_string(),
             flag: false,
-            params: vec![filename]
+            params: vec![args[1].clone()]
         };
         if let Err(e) = ed.edit_command(cl) {
             print_error(e, ed.show_help);
         }
+        ed.log(&format!("e {}", args[1].clone()));
     }
 
     let mut rl = rustyline::Editor::<()>::new();
@@ -63,6 +63,7 @@ fn main() {
             },
             Ok(input) => {
                 let input = input.trim_end();
+                ed.log(input);
 
                 if ed.insert_mode {
                     if input == "." {

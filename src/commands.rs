@@ -4,7 +4,7 @@ use std::fs;
 use std::process;
 use regex::Regex;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct CommandLine {
     pub addr_1: Option<usize>,
     pub addr_2: Option<usize>,

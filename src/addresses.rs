@@ -56,7 +56,7 @@ impl Addresses for Editor {
         }
     }
 
-    fn is_range_ok(&self, cl: CommandLine) -> bool {
+    fn is_range_ok(&self, _cl: CommandLine) -> bool {
         // FIXME: Validate range
         /*
         if addr_1 > addr_2 || addr_2 > self.lines.len() {

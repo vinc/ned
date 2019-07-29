@@ -1,5 +1,6 @@
 use crate::addresses::*;
 use crate::commands::*;
+use std::fs;
 use regex::Regex;
 
 static RE_ADDRS: &str =
@@ -29,9 +30,10 @@ pub struct Editor {
     pub show_help: bool,
     pub show_debug: bool,
     pub insert_mode: bool,
+    pub filename: Option<String>,
     pub addr: usize,
     pub lines: Vec<String>,
-    pub filename: Option<String>
+    pub history: Vec<String>
 }
 
 impl Editor {
@@ -42,8 +44,9 @@ impl Editor {
             show_help: true,
             insert_mode: false,
             filename: None,
+            addr: 0,
             lines: Vec::new(),
-            addr: 0
+            history: Vec::new(),
         }
     }
 
@@ -75,5 +78,14 @@ impl Editor {
         }
 
         CommandLine { addr_1, addr_2, cmd, flag, params }
+    }
+
+    pub fn log(&mut self, input: &str) {
+        self.history.push(input.to_string());
+        if let Some(filename) = self.filename.clone() {
+            let file = format!(".{}.ned", filename);
+            let data = self.history.join("\n") + "\n";
+            fs::write(file, data).expect("Unable to write ned file");
+        }
     }
 }
