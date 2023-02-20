@@ -11,4 +11,4 @@ readme = "README.md"
 [dependencies]
 colored = "1.6.0"
 regex = "1"
-rustyline = "5.0.0"
+rustyline = "11.0.0"
